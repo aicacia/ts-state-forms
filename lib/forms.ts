@@ -81,6 +81,28 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
     const store = state.createStore<Forms>("forms", Map()),
         validators: IValidators = {};
 
+    store.fromJSON = (json: any) => {
+        json = json || {};
+
+        return Object.keys(json).reduce((forms, key) => {
+            const jsonForm = json[key] || {};
+
+            return forms.set(
+                key,
+                Form({
+                    valid: !!jsonForm.valid,
+                    fields: Object.keys(jsonForm.fields || []).reduce(
+                        (fields, key) => {
+                            const jsonField = jsonForm[key];
+                            return fields.set(key, Field(jsonField));
+                        },
+                        Map<string, Record<IField>>()
+                    )
+                })
+            );
+        }, Map<string, Record<IForm>>());
+    };
+
     const create = <D>(
         defaults: D,
         changesetFn: (changeset: Changeset) => Changeset,
