@@ -9,13 +9,13 @@ import { IConsumer } from "@stembord/state-react";
 export interface IField<T = any> {
     value: T;
     focus: boolean;
-    error: IError[];
+    errors: IError[];
 }
 
 export const Field = Record<IField>({
     value: "",
     focus: false,
-    error: []
+    errors: []
 });
 
 export interface IForm {
@@ -132,11 +132,12 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
                     fields = form
                         .get("fields", Map<string, Record<IField>>())
                         .map((field, key) => {
-                            const error = changeset.getError(key);
-                            if (error.length !== 0) {
+                            const errors = changeset.getError(key);
+
+                            if (errors.length !== 0) {
                                 valid = false;
                             }
-                            return field.set("error", error);
+                            return field.set("errors", errors);
                         });
 
                 return state.set(
@@ -180,6 +181,39 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
         selectForm(state, formId)
             .get("fields", Map<string, Record<IField>>())
             .get(name, Field());
+
+    const updateForm = <T = any>(
+        formId: string,
+        update: (form: Record<IForm>) => Record<IForm>
+    ) => {
+        store.updateState(state =>
+            state.set(formId, update(state.get(formId, Form())))
+        );
+    };
+
+    const setErrors = <T = any>(
+        formId: string,
+        errors: { [key: string]: IError[] }
+    ) => {
+        store.updateState(state => {
+            const form: Record<IForm> = state.get(formId, Form()),
+                fields = Object.keys(errors).reduce((fields, key) => {
+                    const errorArray = errors[key],
+                        field = fields.get(key);
+
+                    if (errorArray && field) {
+                        fields = fields.set(
+                            key,
+                            field.set("errors", errorArray)
+                        );
+                    }
+
+                    return fields;
+                }, form.get("fields", Map<string, Record<IField>>()));
+
+            return state.set(formId, form.set("fields", fields));
+        });
+    };
 
     const updateField = <T = any>(
         formId: string,
@@ -232,7 +266,7 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
                     .props as any,
                 field = selectField(state, formId, name),
                 value = field.get("value", ""),
-                errors = field.get("error", []);
+                errors = field.get("errors", []);
 
             return React.createElement(Component, {
                 ...props,
@@ -310,6 +344,8 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
                         timeout
                     );
                     this.consumerRender = this.consumerRender.bind(this);
+                    this.setErrors = this.setErrors.bind(this);
+                    this.updateForm = this.updateForm.bind(this);
                     this.getForm = this.getForm.bind(this);
                     this.resetForm = this.resetForm.bind(this);
                 }
@@ -323,13 +359,20 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
                             "valid",
                             true
                         ),
+                        setErrors: this.setErrors,
+                        updateForm: this.updateForm,
                         resetForm: this.resetForm,
                         getForm: this.getForm,
                         formId: this.formId
                     });
                 }
+                setErrors(errors: { [key: string]: IError[] }) {
+                    setErrors(this.formId, errors);
+                }
+                updateForm(fn: (form: Record<IForm>) => Record<IForm>) {
+                    updateForm(this.formId, fn);
+                }
                 resetForm() {
-                    console.log((this.props as any).defaults);
                     resetForm(this.formId, (this.props as any).defaults || {});
                 }
                 getForm() {
@@ -353,6 +396,8 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
         remove,
         selectForm,
         selectField,
+        updateForm,
+        setErrors,
         updateField,
         removeField,
         store,

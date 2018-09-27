@@ -13,6 +13,8 @@ export const {
     remove,
     selectForm,
     selectField,
+    updateForm,
+    setErrors,
     updateField,
     removeField,
     store,
@@ -25,21 +27,33 @@ export const {
 
 ```tsx
 // "./lib/components/Form"
+import axios from "axios";
 import { injectForm, Field } from "../path/to/forms";
 
 // create a component that can be used with Field Component
 const Input: React.ComponentType<Partial<IInputProps>> = ({
     value,
+    error,
+    errors,
     onChange,
     onBlur,
     onFocus
 }: Partial<IInputProps>) => (
-    <input
-        value={value}
-        onChange={onChange}
-        onBlur={onBlur}
-        onFocus={onFocus}
-    />
+    <div>
+        <input
+            value={value}
+            onChange={onChange}
+            onBlur={onBlur}
+            onFocus={onFocus}
+        />
+        {error && <ul>
+        {
+            errors.map({ message } => (
+                <li>{message}</li>
+            ))
+        }
+        </ul>}
+    </div>
 );
 
 interface IFormProps extends IInjectedFormProps {}
@@ -51,10 +65,21 @@ class Form extends React.PureComponent<IFormProps> {
         this.onSubmit = this.onSubmit.bind(this);
     }
     onSubmit() {
-        const { resetForm, getForm } = this.props;
+        const { resetForm, getForm, setErrors } = this.props,
+            values = getForm();
 
-        console.log(getForm());
-        resetForm();
+        // submit values to server
+        axios
+            .post("/form")
+            .then(response => {
+                // handle response, reset form
+                resetForm();
+            })
+            .catch(response => {
+                if (response.data) {
+                    setErrors(response.data.errors);
+                }
+            });
     }
     render() {
         const { formId, valid } = this.props;

@@ -14,10 +14,7 @@ const dom = new JSDOM("<!doctype html><html><body></body></html>");
 
 const state = new State(),
     { Consumer, Provider } = createContext(state.getState()),
-    { selectField, store, Field, injectForm } = createFormsStore(
-        state,
-        Consumer
-    );
+    { selectField, Field, injectForm } = createFormsStore(state, Consumer);
 
 Enzyme.configure({ adapter: new EnzymeAdapter() });
 
