@@ -58,8 +58,9 @@ export type IFieldProps<T> = T & {
 export interface IInjectedFormProps {
     valid: boolean;
     formId: string;
-    getForm(): Map<string, any>;
+    setErrors(errors: { [key: string]: IError[] }): Record<IForm>;
     resetForm(): void;
+    getFormData(): Map<string, any>;
 }
 
 export interface IOptions<D> {
@@ -345,8 +346,7 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
                     );
                     this.consumerRender = this.consumerRender.bind(this);
                     this.setErrors = this.setErrors.bind(this);
-                    this.updateForm = this.updateForm.bind(this);
-                    this.getForm = this.getForm.bind(this);
+                    this.getFormData = this.getFormData.bind(this);
                     this.resetForm = this.resetForm.bind(this);
                 }
                 componentWillUnmount() {
@@ -360,22 +360,18 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
                             true
                         ),
                         setErrors: this.setErrors,
-                        updateForm: this.updateForm,
                         resetForm: this.resetForm,
-                        getForm: this.getForm,
+                        getFormData: this.getFormData,
                         formId: this.formId
                     });
                 }
                 setErrors(errors: { [key: string]: IError[] }) {
                     setErrors(this.formId, errors);
                 }
-                updateForm(fn: (form: Record<IForm>) => Record<IForm>) {
-                    updateForm(this.formId, fn);
-                }
                 resetForm() {
                     resetForm(this.formId, (this.props as any).defaults || {});
                 }
-                getForm() {
+                getFormData() {
                     return selectForm(store.state.getState(), this.formId)
                         .get("fields", Map())
                         .map(field => field.get("value", ""));
