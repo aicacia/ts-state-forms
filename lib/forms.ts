@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Map, Record } from "immutable";
-import { State, IState } from "@stembord/state";
+import { State, Store } from "@stembord/state";
 import { Changeset, IError } from "@stembord/changeset";
 import { debounce } from "ts-debounce";
 import { v4 } from "uuid";
@@ -78,8 +78,11 @@ const defaultPropsField = {
     }
 };
 
-export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
-    const store = state.createStore<Forms>("forms", Map()),
+export const createFormsStore = <S extends { forms: Forms }>(
+    state: State<S>,
+    Consumer: IConsumer<S>
+) => {
+    const store: Store<S, Forms> = state.getStore("forms" as any) as any,
         validators: IValidators = {};
 
     store.fromJSON = (json: any) => {
@@ -171,11 +174,11 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
         store.updateState(state => state.set(formId, Form({ fields })));
     };
 
-    const selectForm = ({ forms }: IState, formId: string): Record<IForm> =>
-        forms.get(formId, Map());
+    const selectForm = ({ forms }: S, formId: string): Record<IForm> =>
+        forms.get(formId, Form());
 
     const selectField = <T = any>(
-        state: State,
+        state: S,
         formId: string,
         name: string
     ): Record<IField<T>> =>
@@ -262,7 +265,7 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
             this.onBlur = this.onBlur.bind(this);
             this.onFocus = this.onFocus.bind(this);
         }
-        consumerRender(state: IState) {
+        consumerRender(state: S) {
             const { name, formId, Component, getValue, ...props } = this
                     .props as any,
                 field = selectField(state, formId, name),
@@ -352,7 +355,7 @@ export const createFormsStore = (state: State, Consumer: IConsumer<IState>) => {
                 componentWillUnmount() {
                     remove(this.formId);
                 }
-                consumerRender(state: IState) {
+                consumerRender(state: S) {
                     return React.createElement(Component as any, {
                         ...(this.props as any),
                         valid: selectForm(state, this.formId).get(

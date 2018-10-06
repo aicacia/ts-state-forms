@@ -3,16 +3,22 @@ import { JSDOM } from "jsdom";
 import * as React from "react";
 import * as Enzyme from "enzyme";
 import * as EnzymeAdapter from "enzyme-adapter-react-16";
+import { Map, Record } from "immutable";
 import { State } from "@stembord/state";
 import { createContext } from "@stembord/state-react";
-import { createFormsStore, IInjectedFormProps, IInputProps } from "../lib";
+import {
+    createFormsStore,
+    IForm,
+    IInjectedFormProps,
+    IInputProps
+} from "../lib";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>");
 
 (global as any).document = dom.window.document;
 (global as any).window = dom.window;
 
-const state = new State(),
+const state = new State({ forms: Map<string, Record<IForm>>() }),
     { Consumer, Provider } = createContext(state.getState()),
     { selectField, Field, injectForm } = createFormsStore(state, Consumer);
 
@@ -51,7 +57,7 @@ const ConnectedForm = injectForm({
 })(Form);
 
 interface IRootState {
-    value: { [key: string]: any };
+    value: typeof state.current;
 }
 
 class Root extends React.Component<{}, IRootState> {
