@@ -6,6 +6,9 @@ import { debounce } from "ts-debounce";
 import { v4 } from "uuid";
 import { IConsumer } from "@stembord/state-react";
 
+export const INITIAL_STATE = Map<string, Record<IForm>>();
+export const STORE_NAME = "forms";
+
 export interface IField<T = any> {
     value: T;
     focus: boolean;
@@ -27,6 +30,7 @@ export const Form = Record<IForm>({
     valid: true,
     fields: Map()
 });
+
 export type Forms = Map<string, Record<IForm>>;
 
 export interface IInputProps {
@@ -72,17 +76,19 @@ export interface IValidators {
     [key: string]: () => void;
 }
 
+export type IFormState = { [STORE_NAME]: Forms };
+
 const defaultPropsField = {
     getValue(e: Event): any {
         return (e.target as any).value;
     }
 };
 
-export const createFormsStore = <S extends { forms: Forms }>(
+export const createFormsStore = <S extends IFormState>(
     state: State<S>,
     Consumer: IConsumer<S>
 ) => {
-    const store: Store<S, Forms> = state.getStore("forms" as any) as any,
+    const store: Store<S, Forms> = state.getStore(STORE_NAME as any) as any,
         validators: IValidators = {};
 
     store.fromJSON = (json: any) => {
