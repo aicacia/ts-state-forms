@@ -48,7 +48,7 @@ export interface IInputProps {
     >;
 }
 
-export type IFieldProps<T> = T & {
+export type IFieldProps<T> = Partial<T> & {
     formId: string;
     name: string;
     getValue?: (
@@ -56,7 +56,7 @@ export type IFieldProps<T> = T & {
             HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
     ) => any;
-    Component: string | React.ComponentType<T & Partial<IInputProps>>;
+    Component: string | React.ComponentType<T & IInputProps>;
 };
 
 export interface IInjectedFormProps {

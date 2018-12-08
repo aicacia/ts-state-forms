@@ -24,12 +24,12 @@ const state = new State({ forms: Map<string, Record<IForm>>() }),
 
 Enzyme.configure({ adapter: new EnzymeAdapter() });
 
-const Input: React.ComponentType<Partial<IInputProps>> = ({
+const Input: React.ComponentType<IInputProps> = ({
     value,
     onChange,
     onBlur,
     onFocus
-}: Partial<IInputProps>) => (
+}: IInputProps) => (
     <input
         value={value}
         onChange={onChange}
