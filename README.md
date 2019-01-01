@@ -9,17 +9,16 @@ use forms with @stembord/state and @stembord/state-react
 import { state, Consumer } from "../path/to/state";
 
 export const {
-    create,
-    remove,
-    selectForm,
-    selectField,
-    updateForm,
-    setErrors,
-    updateField,
-    removeField,
-    store,
-    injectForm,
-    Field
+  create,
+  remove,
+  selectForm,
+  selectField,
+  updateForm,
+  setErrors,
+  updateField,
+  removeField,
+  store,
+  injectForm
 } = createFormsStore(state, Consumer);
 ```
 
@@ -28,17 +27,18 @@ export const {
 ```tsx
 // "./lib/components/Form"
 import axios from "axios";
-import { injectForm, Field } from "../path/to/forms";
+import { IInjectedFormProps } from "@stembord/state-forms";
+import { injectForm } from "../path/to/forms";
 
 // create a component that can be used with Field Component
-const Input: React.ComponentType<Partial<IInputProps>> = ({
+const Input = ({
     value,
     error,
     errors,
     onChange,
     onBlur,
     onFocus
-}: Partial<IInputProps>) => (
+}: IInputProps) => (
     <div>
         <input
             value={value}
@@ -82,12 +82,12 @@ class Form extends React.PureComponent<IFormProps> {
             });
     }
     render() {
-        const { formId, valid } = this.props;
+        const { valid, Field } = this.props;
 
         return (
             <form>
-                <Field formId={formId} name="name" Component={Input} />
-                <Field formId={formId} name="age" Component={Input} />
+                <Field name="name" Component={Input} />
+                <Field name="age" Component={Input} />
                 <input
                     type="submit"
                     onClick={onSubmit}

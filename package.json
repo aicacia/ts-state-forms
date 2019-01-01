@@ -1,59 +1,61 @@
 {
-    "name": "@stembord/state-forms",
-    "version": "0.2.2",
-    "description": "use forms with @stembord/state and @stembord/state-react",
-    "repository": {
-        "type": "git",
-        "url": "https://gitlab.com/stembord/ts-state-forms.git"
-    },
-    "main": "./src/index.js",
-    "types": "./src/index.d.ts",
-    "module": "./lib/index.ts",
-    "scripts": {
-        "build": "tsc",
-        "prepublishOnly": "npm run clean && npm run build",
-        "test": "ts-node ./node_modules/tape/bin/tape ./tests/**/*.test.{ts,tsx} | tap-spec",
-        "clean": "npm run clean_build",
-        "clean_build": "rm -rf ./src"
-    },
-    "keywords": [
-        "state",
-        "react",
-        "forms"
-    ],
-    "author": "Nathan Faucett",
-    "license": "(MIT OR Apache-2.0)",
-    "readmeFilename": "README.md",
-    "devDependencies": {
-        "@stembord/changeset": ">= 0.1.1",
-        "@stembord/state": ">= 0.2.0",
-        "@stembord/state-react": ">= 0.2.0",
-        "@types/enzyme": "^3.1.13",
-        "@types/enzyme-adapter-react-16": "^1.0.3",
-        "@types/jsdom": "^11.0.6",
-        "@types/react": "^16.4.9",
-        "@types/tape": "^4.2.32",
-        "@types/uuid": "^3.4.4",
-        "enzyme": "^3.4.1",
-        "enzyme-adapter-react-16": "^1.2.0",
-        "immutable": ">= 4.0.0-rc.9",
-        "jsdom": "^11.12.0",
-        "react": "^16.4.2",
-        "react-dom": "^16.4.2",
-        "tap-spec": "^5.0.0",
-        "tape": "^4.9.1",
-        "ts-node": "^7.0.0",
-        "typescript": "^3.0.1"
-    },
-    "dependencies": {
-        "ts-debounce": "^0.3.2",
-        "uuid": "^3.3.2"
-    },
-    "peerDependencies": {
-        "immutable": ">= 4.0.0-rc.9",
-        "@stembord/changeset": ">= 0.1.1",
-        "@stembord/state": ">= 0.2.0",
-        "@stembord/state-react": ">= 0.2.0",
-        "react": ">= 16.4.2"
-    }
+  "name": "@stembord/state-forms",
+  "version": "0.2.3",
+  "description": "use forms with @stembord/state and @stembord/state-react",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/stembord/ts-state-forms.git"
+  },
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "module": "./lib/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "ts-node ./node_modules/tape/bin/tape ./tests/**/*.test.{ts,tsx} | tap-spec",
+    "clean": "npm run clean_build",
+    "clean_build": "rm -rf ./src",
+    "format": "prettier --write '**/*.{js,jsx,ts,tsx,json}'"
+  },
+  "keywords": [
+    "state",
+    "react",
+    "forms"
+  ],
+  "author": "Nathan Faucett",
+  "license": "(MIT OR Apache-2.0)",
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "@stembord/changeset": ">= 0.1.3",
+    "@stembord/state": ">= 0.2.0",
+    "@stembord/state-react": ">= 0.2.4",
+    "@types/enzyme": "^3.1.15",
+    "@types/enzyme-adapter-react-16": "^1.0.3",
+    "@types/jsdom": "^12.2.1",
+    "@types/react": "^16.7.18",
+    "@types/tape": "^4.2.33",
+    "@types/uuid": "^3.4.4",
+    "enzyme": "^3.8.0",
+    "enzyme-adapter-react-16": "^1.7.1",
+    "immutable": ">= 4.0.0-rc.12",
+    "jsdom": "^13.1.0",
+    "prettier": "^1.15.3",
+    "react": "^16.7.0",
+    "react-dom": "^16.7.0",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.9.2",
+    "ts-node": "^7.0.1",
+    "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "ts-debounce": "^1.0.0",
+    "uuid": "^3.3.2"
+  },
+  "peerDependencies": {
+    "immutable": ">= 4.0.0-rc.12",
+    "@stembord/changeset": ">= 0.1.3",
+    "@stembord/state": ">= 0.2.0",
+    "@stembord/state-react": ">= 0.2.4",
+    "react": ">= 16.7.0"
+  }
 }
