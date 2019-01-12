@@ -3,11 +3,11 @@
     "target": "es3",
     "module": "commonjs",
     "jsx": "react",
+    "moduleResolution": "node",
     "declaration": true,
     "outDir": "./src",
     "strict": true,
-    "lib": ["es2015", "dom"]
+    "lib": ["esnext"]
   },
-  "include": ["lib/**/*.ts"],
-  "exclude": ["node_modules", "tests/**/*.test.ts"]
+  "include": ["lib"]
 }

@@ -1,10 +1,10 @@
-import * as React from "react";
-import { Map, Record } from "immutable";
-import { State, Store } from "@stembord/state";
 import { Changeset, IError } from "@stembord/changeset";
+import { State, Store } from "@stembord/state";
+import { IConsumer } from "@stembord/state-react";
+import { Map, Record } from "immutable";
+import * as React from "react";
 import { debounce } from "ts-debounce";
 import { v4 } from "uuid";
-import { IConsumer } from "@stembord/state-react";
 
 export const INITIAL_STATE = Map<string, Record<IForm>>();
 export const STORE_NAME = "forms";
@@ -90,7 +90,7 @@ export interface IValidators {
   [key: string]: () => void;
 }
 
-export type IFormState = { [STORE_NAME]: Forms };
+export interface IFormState { [STORE_NAME]: Forms }
 
 const defaultPropsField = {
   getValue(e: Event): any {
@@ -296,8 +296,8 @@ export const createFormsStore = <S extends IFormState>(
         return React.createElement(Component as any, {
           ...props,
           error: errors.length !== 0,
-          errors: errors,
-          value: value,
+          errors,
+          value,
           onChange: this.onChange,
           onBlur: this.onBlur,
           onFocus: this.onFocus

@@ -1,11 +1,11 @@
-import * as tape from "tape";
-import { JSDOM } from "jsdom";
-import * as React from "react";
+import { State } from "@stembord/state";
+import { createContext } from "@stembord/state-react";
 import * as Enzyme from "enzyme";
 import * as EnzymeAdapter from "enzyme-adapter-react-16";
 import { Map, Record } from "immutable";
-import { State } from "@stembord/state";
-import { createContext } from "@stembord/state-react";
+import { JSDOM } from "jsdom";
+import * as React from "react";
+import * as tape from "tape";
 import {
   createFormsStore,
   IForm,

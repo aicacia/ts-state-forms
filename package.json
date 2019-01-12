@@ -1,6 +1,6 @@
 {
   "name": "@stembord/state-forms",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "use forms with @stembord/state and @stembord/state-react",
   "repository": {
     "type": "git",
@@ -15,7 +15,10 @@
     "test": "ts-node ./node_modules/tape/bin/tape ./tests/**/*.test.{ts,tsx} | tap-spec",
     "clean": "npm run clean_build",
     "clean_build": "rm -rf ./src",
-    "format": "prettier --write '**/*.{js,jsx,ts,tsx,json}'"
+    "format.ts": "prettier-tslint fix '**/*.{ts,tsx}'",
+    "format.js": "prettier --write '**/*.{js,jsx,json}' --ignore-path .gitignore",
+    "format": "npm run format.ts && npm run format.js",
+    "lint": "tslint -c tslint.json 'lib/**/*.{ts,tsx}'"
   },
   "keywords": [
     "state",
@@ -40,11 +43,14 @@
     "immutable": ">= 4.0.0-rc.12",
     "jsdom": "^13.1.0",
     "prettier": "^1.15.3",
+    "prettier-tslint": "^0.4.2",
     "react": "^16.7.0",
     "react-dom": "^16.7.0",
     "tap-spec": "^5.0.0",
     "tape": "^4.9.2",
     "ts-node": "^7.0.1",
+    "tslint": "^5.12.0",
+    "tslint-config-prettier": "^1.17.0",
     "typescript": "^3.2.2"
   },
   "dependencies": {
