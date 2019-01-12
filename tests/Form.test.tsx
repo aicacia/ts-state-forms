@@ -25,12 +25,14 @@ const state = new State({ forms: Map<string, Record<IForm>>() }),
 Enzyme.configure({ adapter: new EnzymeAdapter() });
 
 interface ITestInputProps extends IInputProps {
+  id: string;
   label: string;
 }
 
 class TestInput extends React.PureComponent<ITestInputProps> {
   render() {
     const {
+      id,
       value,
       error,
       errors,
@@ -45,6 +47,7 @@ class TestInput extends React.PureComponent<ITestInputProps> {
         <label>{label}</label>
         {error && errors.map(error => <span>{error.message}</span>)}
         <input
+          id={id}
           value={value}
           onChange={onChange}
           onBlur={onBlur}
@@ -55,8 +58,32 @@ class TestInput extends React.PureComponent<ITestInputProps> {
   }
 }
 
+const TestInputSFC = ({
+  id,
+  value,
+  error,
+  errors,
+  label,
+  onChange,
+  onBlur,
+  onFocus
+}: ITestInputProps) => (
+  <div>
+    <label>{label}</label>
+    {error && errors.map(error => <span>{error.message}</span>)}
+    <input
+      id={id}
+      value={value}
+      onChange={onChange}
+      onBlur={onBlur}
+      onFocus={onFocus}
+    />
+  </div>
+);
+
 interface IFormValues {
-  name: string;
+  firstName: string;
+  lastName: string;
 }
 interface IFormProps extends IInjectedFormProps {
   defaults?: IFormValues;
@@ -68,7 +95,18 @@ class Form extends React.PureComponent<IFormProps> {
 
     return (
       <form>
-        <Field name="name" label="Name" Component={TestInput} />
+        <Field
+          id="firstName"
+          name="firstName"
+          label="First Name"
+          Component={TestInput}
+        />
+        <Field
+          id="lastName"
+          name="lastName"
+          label="Last Name"
+          Component={TestInputSFC}
+        />
       </form>
     );
   }
@@ -102,7 +140,10 @@ class Root extends React.Component<{}, IRootState> {
   render() {
     return (
       <Provider value={this.state.value}>
-        <ConnectedForm ref={this.formRef} defaults={{ name: "default" }} />
+        <ConnectedForm
+          ref={this.formRef}
+          defaults={{ firstName: "default", lastName: "default" }}
+        />
       </Provider>
     );
   }
@@ -120,17 +161,31 @@ tape("connect update", (assert: tape.Test) => {
   );
 
   assert.equals(
-    selectField(state.getState(), formId, "name").get("value"),
+    selectField(state.getState(), formId, "firstName").get("value"),
     "default",
-    "store's value should the default"
+    "store's firstName value should the default"
+  );
+  wrapper
+    .find("input#firstName")
+    .simulate("change", { target: { value: "Billy" } });
+  assert.equals(
+    selectField(state.getState(), formId, "firstName").get("value"),
+    "Billy",
+    "store's firstName value should update"
   );
 
-  wrapper.find("input").simulate("change", { target: { value: "text" } });
-
   assert.equals(
-    selectField(state.getState(), formId, "name").get("value"),
-    "text",
-    "store's value should update"
+    selectField(state.getState(), formId, "lastName").get("value"),
+    "default",
+    "store's lastName value should the default"
+  );
+  wrapper
+    .find("input#lastName")
+    .simulate("change", { target: { value: "Bob" } });
+  assert.equals(
+    selectField(state.getState(), formId, "lastName").get("value"),
+    "Bob",
+    "store's lastName value should update"
   );
 
   assert.end();

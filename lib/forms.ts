@@ -1,9 +1,9 @@
 import { Changeset, IError } from "@stembord/changeset";
+import { debounce } from "@stembord/debounce";
 import { State, Store } from "@stembord/state";
 import { IConsumer } from "@stembord/state-react";
 import { Map, Record } from "immutable";
 import * as React from "react";
-import { debounce } from "ts-debounce";
 import { v4 } from "uuid";
 
 export const INITIAL_STATE = Map<string, Record<IForm>>();
@@ -76,12 +76,14 @@ class FieldComponent<T extends IInputProps> extends React.PureComponent<
 export interface IInjectedFormProps {
   valid: boolean;
   Field: typeof FieldComponent;
+  change<T>(name: string, value: T): void;
   setErrors(errors: { [key: string]: IError[] }): Record<IForm>;
   resetForm(): void;
   getFormData(): Map<string, any>;
 }
 
 export interface IOptions {
+  name?: string;
   timeout?: number;
   changeset(changeset: Changeset): Changeset;
 }
@@ -90,7 +92,9 @@ export interface IValidators {
   [key: string]: () => void;
 }
 
-export interface IFormState { [STORE_NAME]: Forms }
+export interface IFormState {
+  [STORE_NAME]: Forms;
+}
 
 const defaultPropsField = {
   getValue(e: Event): any {
@@ -127,9 +131,10 @@ export const createFormsStore = <S extends IFormState>(
   const create = <D>(
     changesetFn: (changeset: Changeset) => Changeset,
     timeout: number,
+    formName?: string,
     defaults?: D
-  ) => {
-    const formId = v4();
+  ): string => {
+    const formId = formName + v4();
 
     resetForm(formId, defaults || {});
 
@@ -247,6 +252,11 @@ export const createFormsStore = <S extends IFormState>(
     });
   };
 
+  const changeField = <T>(formId: string, name: string, value: T) => {
+    updateField(formId, name, field => field.set("value", value));
+    validators[formId]();
+  };
+
   const removeField = (formId: string, name: string) => {
     store.updateState(state => {
       const form: Record<IForm> = state.get(formId, Form()),
@@ -272,12 +282,7 @@ export const createFormsStore = <S extends IFormState>(
         >
       ) => {
         const { name, getValue } = this.props;
-
-        validators[formId]();
-
-        updateField(formId, name, field =>
-          field.set("value", (getValue as any)(e))
-        );
+        changeField(formId, name, (getValue as any)(e));
       };
       onBlur = () => {
         const { name } = this.props;
@@ -317,7 +322,8 @@ export const createFormsStore = <S extends IFormState>(
   };
 
   const injectForm = <D>(options: IOptions) => {
-    const timeout = options.timeout || 300,
+    const formName = options.name || "",
+      timeout = options.timeout || 300,
       changesetFn = options.changeset;
 
     return <P extends IInjectedFormProps & IFormProps<D>>(
@@ -336,7 +342,7 @@ export const createFormsStore = <S extends IFormState>(
         constructor(props: P) {
           super(props);
 
-          this._formId = create(changesetFn, timeout, props.defaults);
+          this._formId = create(changesetFn, timeout, formName, props.defaults);
           this._Field = createFieldComponent(this._formId);
         }
         getFormId = () => {
@@ -344,6 +350,9 @@ export const createFormsStore = <S extends IFormState>(
         };
         getField = () => {
           return this._Field;
+        };
+        change = <T>(name: string, value: T) => {
+          changeField(this._formId, name, value);
         };
         setErrors = (errors: { [key: string]: IError[] }) => {
           setErrors(this._formId, errors);
@@ -361,6 +370,7 @@ export const createFormsStore = <S extends IFormState>(
             ...this.props,
             valid: selectForm(state, this._formId).get("valid", true),
             Field: this._Field,
+            change: this.change,
             setErrors: this.setErrors,
             resetForm: this.resetForm,
             getFormData: this.getFormData
