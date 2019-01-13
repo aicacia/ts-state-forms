@@ -198,6 +198,9 @@ export const createFormsStore = <S extends IFormState>(
   const selectForm = ({ forms }: S, formId: string): Record<IForm> =>
     forms.get(formId, Form());
 
+  const selectFormExists = ({ forms }: S, formId: string): boolean =>
+    forms.has(formId);
+
   const selectField = <T = any>(
     state: S,
     formId: string,
@@ -366,15 +369,18 @@ export const createFormsStore = <S extends IFormState>(
             .map(field => field.get("value"));
         };
         consumerRender = (state: S) => {
-          return React.createElement(Component, {
-            ...this.props,
-            valid: selectForm(state, this._formId).get("valid", true),
-            Field: this._Field,
-            change: this.change,
-            setErrors: this.setErrors,
-            resetForm: this.resetForm,
-            getFormData: this.getFormData
-          });
+          return (
+            selectFormExists(state, this._formId) &&
+            React.createElement(Component, {
+              ...this.props,
+              valid: selectForm(state, this._formId).get("valid", true),
+              Field: this._Field,
+              change: this.change,
+              setErrors: this.setErrors,
+              resetForm: this.resetForm,
+              getFormData: this.getFormData
+            })
+          );
         };
         componentWillUnmount() {
           remove(this._formId);
@@ -390,6 +396,7 @@ export const createFormsStore = <S extends IFormState>(
     create,
     remove,
     selectForm,
+    selectFormExists,
     selectField,
     updateForm,
     setErrors,

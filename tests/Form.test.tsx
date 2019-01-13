@@ -90,7 +90,7 @@ function SelectInput<T = any>({
 
 interface IFormValues {
   name: string;
-  gender: number;
+  gender: IGender;
 }
 interface IFormProps extends IInjectedFormProps {
   defaults?: IFormValues;
@@ -105,9 +105,9 @@ const GENDERS: IGender[] = [
     { key: 1, value: "Male" },
     { key: 2, value: "Female" }
   ],
-  getOptionValue = (e: React.FormEvent) =>
+  getGenderValue = (e: React.FormEvent) =>
     GENDERS.find(option => option.key === (e.target as any).value),
-  getOptionDisplayValue = ({ value }: IGender) => value;
+  getGenderDisplayValue = ({ value }: IGender) => value;
 
 class Form extends React.PureComponent<IFormProps> {
   render() {
@@ -119,8 +119,8 @@ class Form extends React.PureComponent<IFormProps> {
         <Field
           name="gender"
           label="Gender"
-          getValue={getOptionValue}
-          getDisplayValue={getOptionDisplayValue}
+          getValue={getGenderValue}
+          getDisplayValue={getGenderDisplayValue}
           Component={
             SelectInput as React.ComponentType<ISelectInputProps<IGender>>
           }
@@ -146,6 +146,7 @@ interface IRootState {
 
 class Root extends React.Component<{}, IRootState> {
   formRef: React.RefObject<any>;
+  isUpdating: boolean = false;
 
   constructor(props: {}) {
     super(props);
@@ -156,8 +157,8 @@ class Root extends React.Component<{}, IRootState> {
       value: state.getState()
     };
 
-    state.on("set-state", value => {
-      this.setState({ value });
+    state.addListener("set-state", () => {
+      this.setState({ value: state.getState() });
     });
   }
 
@@ -166,7 +167,7 @@ class Root extends React.Component<{}, IRootState> {
       <Provider value={this.state.value}>
         <ConnectedForm
           ref={this.formRef}
-          defaults={{ name: "default", gender: 1 }}
+          defaults={{ name: "default", gender: GENDERS[0] }}
         />
       </Provider>
     );
@@ -187,25 +188,25 @@ tape("connect update", (assert: tape.Test) => {
   assert.equals(
     selectField(state.getState(), formId, "name").get("value"),
     "default",
-    "store's name value should be 'default'"
+    "store's name not set to default"
   );
   wrapper.find("input").simulate("change", { target: { value: "Billy" } });
   assert.equals(
     selectField(state.getState(), formId, "name").get("value"),
     "Billy",
-    "store's name value should update"
+    "store's name should update"
   );
 
-  assert.equals(
+  assert.deepEquals(
     selectField(state.getState(), formId, "gender").get("value"),
-    1,
-    "store's gender value should be 1"
+    GENDERS[0],
+    "store's gender not set to default"
   );
   wrapper.find("select").simulate("change", { target: { value: 2 } });
   assert.deepEquals(
     selectField(state.getState(), formId, "gender").get("value"),
-    { key: 2, value: "Female" },
-    "store's gender value should update"
+    GENDERS[1],
+    "store's gender should update"
   );
 
   assert.end();
