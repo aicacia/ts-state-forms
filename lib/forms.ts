@@ -9,10 +9,6 @@ import { v4 } from "uuid";
 export const INITIAL_STATE = Map<string, Record<IForm>>();
 export const STORE_NAME = "forms";
 
-export type IExtractGeneric<Type> = Type extends React.ComponentType<infer X>
-  ? X
-  : Type;
-
 export interface IField<T = any> {
   value: T;
   focus: boolean;
@@ -37,10 +33,10 @@ export const Form = Record<IForm>({
 
 export type Forms = Map<string, Record<IForm>>;
 
-export interface IInputProps {
+export interface IInputProps<T = any> {
   error: boolean;
   errors: IError[];
-  value: any;
+  value: T;
   onChange: React.ChangeEventHandler<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
   >;
@@ -52,31 +48,34 @@ export interface IInputProps {
   >;
 }
 
-export type IFieldProps<T extends IInputProps> = Pick<
-  T,
-  Exclude<keyof T, keyof IInputProps>
+export type IGetValueFn<T> = (
+  e: React.ChangeEvent<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  >
+) => T;
+
+export type IFieldProps<P extends IInputProps<T>, T = any> = Pick<
+  P,
+  Exclude<keyof P, keyof IInputProps<T>>
 > & {
   name: string;
-  Component: React.ComponentType<T> | "input" | "select" | "textarea";
-  getValue?: (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => any;
+  Component: React.ComponentType<P> | "input" | "select" | "textarea";
+  getValue?: IGetValueFn<T>;
 };
 
 export interface IFormProps<D = {}> {
   defaults?: D;
 }
 
-class FieldComponent<T extends IInputProps> extends React.PureComponent<
-  IFieldProps<T>
-> {}
+class FieldComponent<
+  P extends IInputProps<T>,
+  T = any
+> extends React.PureComponent<IFieldProps<P, T>> {}
 
 export interface IInjectedFormProps {
   valid: boolean;
   Field: typeof FieldComponent;
-  change<T>(name: string, value: T): void;
+  change<T = any>(name: string, value: T): void;
   setErrors(errors: { [key: string]: IError[] }): Record<IForm>;
   resetForm(): void;
   getFormData(): Map<string, any>;
@@ -272,17 +271,18 @@ export const createFormsStore = <S extends IFormState>(
 
   const createFieldComponent = (formId: string) => {
     return class FieldComponent<
-      T extends IInputProps
-    > extends React.PureComponent<IFieldProps<T>> {
+      P extends IInputProps,
+      T = any
+    > extends React.PureComponent<IFieldProps<P, T>> {
       static defaultProps = defaultPropsField;
 
       onChange = (
-        e: React.ChangeEventHandler<
+        e: React.ChangeEvent<
           HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
       ) => {
         const { name, getValue } = this.props;
-        changeField(formId, name, (getValue as any)(e));
+        changeField(formId, name, (getValue as IGetValueFn<T>)(e));
       };
       onBlur = () => {
         const { name } = this.props;
@@ -294,7 +294,7 @@ export const createFormsStore = <S extends IFormState>(
       };
       consumerRender = (state: S) => {
         const { name, Component, getValue, ...props } = this.props,
-          field = selectField(state, formId, name),
+          field = selectField<T>(state, formId, name),
           value = field.get("value"),
           errors = field.get("errors");
 
@@ -308,7 +308,7 @@ export const createFormsStore = <S extends IFormState>(
           onFocus: this.onFocus
         });
       };
-      componentDidUpdate(prev: IFieldProps<T>) {
+      componentDidUpdate(prev: IFieldProps<P, T>) {
         const { name } = this.props;
 
         if (name !== prev.name) {
@@ -351,7 +351,7 @@ export const createFormsStore = <S extends IFormState>(
         getField = () => {
           return this._Field;
         };
-        change = <T>(name: string, value: T) => {
+        change = <T = any>(name: string, value: T) => {
           changeField(this._formId, name, value);
         };
         setErrors = (errors: { [key: string]: IError[] }) => {
@@ -394,6 +394,7 @@ export const createFormsStore = <S extends IFormState>(
     updateForm,
     setErrors,
     updateField,
+    changeField,
     removeField,
     store,
     injectForm

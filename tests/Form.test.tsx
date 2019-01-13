@@ -25,14 +25,12 @@ const state = new State({ forms: Map<string, Record<IForm>>() }),
 Enzyme.configure({ adapter: new EnzymeAdapter() });
 
 interface ITestInputProps extends IInputProps {
-  id: string;
-  label: string;
+  label: React.ReactNode;
 }
 
 class TestInput extends React.PureComponent<ITestInputProps> {
   render() {
     const {
-      id,
       value,
       error,
       errors,
@@ -47,7 +45,6 @@ class TestInput extends React.PureComponent<ITestInputProps> {
         <label>{label}</label>
         {error && errors.map(error => <span>{error.message}</span>)}
         <input
-          id={id}
           value={value}
           onChange={onChange}
           onBlur={onBlur}
@@ -58,36 +55,59 @@ class TestInput extends React.PureComponent<ITestInputProps> {
   }
 }
 
-const TestInputSFC = ({
-  id,
+interface ISelectInputProps<T = any> extends IInputProps<T> {
+  label: React.ReactNode;
+  children: React.ReactNode;
+  getDisplayValue(value: T): string;
+}
+
+function SelectInput<T = any>({
   value,
   error,
   errors,
   label,
   onChange,
   onBlur,
-  onFocus
-}: ITestInputProps) => (
-  <div>
-    <label>{label}</label>
-    {error && errors.map(error => <span>{error.message}</span>)}
-    <input
-      id={id}
-      value={value}
-      onChange={onChange}
-      onBlur={onBlur}
-      onFocus={onFocus}
-    />
-  </div>
-);
+  onFocus,
+  getDisplayValue,
+  children
+}: ISelectInputProps<T>) {
+  return (
+    <div>
+      <label>{label}</label>
+      {error && errors.map(error => <span>{error.message}</span>)}
+      <select
+        value={getDisplayValue(value)}
+        onChange={onChange}
+        onBlur={onBlur}
+        onFocus={onFocus}
+      >
+        {children}
+      </select>
+    </div>
+  );
+}
 
 interface IFormValues {
-  firstName: string;
-  lastName: string;
+  name: string;
+  gender: number;
 }
 interface IFormProps extends IInjectedFormProps {
   defaults?: IFormValues;
 }
+
+interface IGender {
+  key: number;
+  value: "Male" | "Female";
+}
+
+const GENDERS: IGender[] = [
+    { key: 1, value: "Male" },
+    { key: 2, value: "Female" }
+  ],
+  getOptionValue = (e: React.FormEvent) =>
+    GENDERS.find(option => option.key === (e.target as any).value),
+  getOptionDisplayValue = ({ value }: IGender) => value;
 
 class Form extends React.PureComponent<IFormProps> {
   render() {
@@ -95,18 +115,22 @@ class Form extends React.PureComponent<IFormProps> {
 
     return (
       <form>
+        <Field name="name" label="Name" Component={TestInput} />
         <Field
-          id="firstName"
-          name="firstName"
-          label="First Name"
-          Component={TestInput}
-        />
-        <Field
-          id="lastName"
-          name="lastName"
-          label="Last Name"
-          Component={TestInputSFC}
-        />
+          name="gender"
+          label="Gender"
+          getValue={getOptionValue}
+          getDisplayValue={getOptionDisplayValue}
+          Component={
+            SelectInput as React.ComponentType<ISelectInputProps<IGender>>
+          }
+        >
+          {GENDERS.map(option => (
+            <option key={option.key} value={option.key}>
+              {option.value}
+            </option>
+          ))}
+        </Field>
       </form>
     );
   }
@@ -142,7 +166,7 @@ class Root extends React.Component<{}, IRootState> {
       <Provider value={this.state.value}>
         <ConnectedForm
           ref={this.formRef}
-          defaults={{ firstName: "default", lastName: "default" }}
+          defaults={{ name: "default", gender: 1 }}
         />
       </Provider>
     );
@@ -161,31 +185,27 @@ tape("connect update", (assert: tape.Test) => {
   );
 
   assert.equals(
-    selectField(state.getState(), formId, "firstName").get("value"),
+    selectField(state.getState(), formId, "name").get("value"),
     "default",
-    "store's firstName value should the default"
+    "store's name value should be 'default'"
   );
-  wrapper
-    .find("input#firstName")
-    .simulate("change", { target: { value: "Billy" } });
+  wrapper.find("input").simulate("change", { target: { value: "Billy" } });
   assert.equals(
-    selectField(state.getState(), formId, "firstName").get("value"),
+    selectField(state.getState(), formId, "name").get("value"),
     "Billy",
-    "store's firstName value should update"
+    "store's name value should update"
   );
 
   assert.equals(
-    selectField(state.getState(), formId, "lastName").get("value"),
-    "default",
-    "store's lastName value should the default"
+    selectField(state.getState(), formId, "gender").get("value"),
+    1,
+    "store's gender value should be 1"
   );
-  wrapper
-    .find("input#lastName")
-    .simulate("change", { target: { value: "Bob" } });
-  assert.equals(
-    selectField(state.getState(), formId, "lastName").get("value"),
-    "Bob",
-    "store's lastName value should update"
+  wrapper.find("select").simulate("change", { target: { value: 2 } });
+  assert.deepEquals(
+    selectField(state.getState(), formId, "gender").get("value"),
+    { key: 2, value: "Female" },
+    "store's gender value should update"
   );
 
   assert.end();
