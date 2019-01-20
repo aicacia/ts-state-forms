@@ -32,6 +32,7 @@ class TestInput extends React.PureComponent<ITestInputProps> {
   render() {
     const {
       value,
+      focus,
       error,
       errors,
       label,
@@ -42,6 +43,7 @@ class TestInput extends React.PureComponent<ITestInputProps> {
 
     return (
       <div>
+        {focus && <span className="focus">Focus</span>}
         <label>{label}</label>
         {error && errors.map(error => <span>{error.message}</span>)}
         <input
@@ -195,6 +197,19 @@ tape("connect update", (assert: tape.Test) => {
     selectField(state.getState(), formId, "name").get("value"),
     "Billy",
     "store's name should update"
+  );
+
+  wrapper.find("input").simulate("focus", {});
+  assert.equals(
+    wrapper.exists("div .focus"),
+    true,
+    "should focus the input element"
+  );
+  wrapper.find("input").simulate("blur", {});
+  assert.equals(
+    !wrapper.exists("div .focus"),
+    true,
+    "should blur the input element"
   );
 
   assert.deepEquals(

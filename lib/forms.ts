@@ -37,6 +37,7 @@ export interface IInputProps<T = any> {
   error: boolean;
   errors: IError[];
   value: T;
+  focus: boolean;
   onChange: React.ChangeEventHandler<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
   >;
@@ -299,6 +300,7 @@ export const createFormsStore = <S extends IFormState>(
         const { name, Component, getValue, ...props } = this.props,
           field = selectField<T>(state, formId, name),
           value = field.get("value"),
+          focus = field.get("focus"),
           errors = field.get("errors");
 
         return React.createElement(Component as any, {
@@ -306,6 +308,7 @@ export const createFormsStore = <S extends IFormState>(
           error: errors.length !== 0,
           errors,
           value,
+          focus,
           onChange: this.onChange,
           onBlur: this.onBlur,
           onFocus: this.onFocus
