@@ -27,8 +27,10 @@ export const {
 ```tsx
 // "./lib/components/Form"
 import axios from "axios";
-import { IInjectedFormProps } from "@stembord/state-forms";
+import { IInputProps, IInjectedFormProps } from "@stembord/state-forms";
 import { injectForm } from "../path/to/forms";
+
+interface IInputProps extends IInputProps<string> {}
 
 // create a component that can be used with Field Component
 const Input = ({
@@ -59,14 +61,11 @@ const Input = ({
 interface IFormProps extends IInjectedFormProps {}
 
 class Form extends React.PureComponent<IFormProps> {
-    constructor(props: IFormProps) {
-        super(props);
-
-        this.onSubmit = this.onSubmit.bind(this);
-    }
-    onSubmit() {
+    onSubmit = (e: React.FormEvent) => {
         const { resetForm, getForm, setErrors } = this.props,
             values = getForm();
+
+        e.preventDefault();
 
         // submit values to server
         axios
@@ -80,17 +79,17 @@ class Form extends React.PureComponent<IFormProps> {
                     setErrors(response.data.errors);
                 }
             });
-    }
+    };
     render() {
         const { valid, Field } = this.props;
 
         return (
-            <form>
+            <form onSubmit={this.onSubmit}>
                 <Field name="name" Component={Input} />
                 <Field name="age" Component={Input} />
                 <input
                     type="submit"
-                    onClick={onSubmit}
+                    onClick={this.onSubmit}
                     disabled={valid}
                     value="submit"
                 />
