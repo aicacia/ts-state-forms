@@ -30,17 +30,17 @@ import axios from "axios";
 import { IInputProps, IInjectedFormProps } from "@stembord/state-forms";
 import { injectForm } from "../path/to/forms";
 
-interface IInputProps extends IInputProps<string> {}
+interface ICustomInputProps extends IInputProps<string> {}
 
 // create a component that can be used with Field Component
-const Input = ({
+const CustomInput = ({
     value,
     error,
     errors,
     onChange,
     onBlur,
     onFocus
-}: IInputProps) => (
+}: ICustomInputProps) => (
     <div>
         <input
             value={value}
@@ -85,8 +85,8 @@ class Form extends React.PureComponent<IFormProps> {
 
         return (
             <form onSubmit={this.onSubmit}>
-                <Field name="name" Component={Input} />
-                <Field name="age" Component={Input} />
+                <Field name="name" Component={CustomInput} />
+                <Field name="age" Component={CustomInput} />
                 <input
                     type="submit"
                     onClick={this.onSubmit}
