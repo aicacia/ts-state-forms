@@ -37,6 +37,7 @@ const CustomInput = ({
     value,
     error,
     errors,
+    change,
     onChange,
     onBlur,
     onFocus

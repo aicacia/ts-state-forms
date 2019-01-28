@@ -47,6 +47,7 @@ export interface IInputProps<T = any> {
   onFocus: React.FocusEventHandler<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
   >;
+  change(value: T): void;
 }
 
 export type IGetValueFn<T> = (
@@ -280,21 +281,27 @@ export const createFormsStore = <S extends IFormState>(
     > extends React.PureComponent<IFieldProps<P, T>> {
       static defaultProps = defaultPropsField;
 
+      change = (value: T) => {
+        changeField(formId, this.props.name, value);
+      };
       onChange = (
         e: React.ChangeEvent<
           HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
       ) => {
-        const { name, getValue } = this.props;
-        changeField(formId, name, (getValue as IGetValueFn<T>)(e));
+        changeField(
+          formId,
+          this.props.name,
+          (this.props.getValue as IGetValueFn<T>)(e)
+        );
       };
       onBlur = () => {
-        const { name } = this.props;
-        updateField(formId, name, field => field.set("focus", false));
+        updateField(formId, this.props.name, field =>
+          field.set("focus", false)
+        );
       };
       onFocus = () => {
-        const { name } = this.props;
-        updateField(formId, name, field => field.set("focus", true));
+        updateField(formId, this.props.name, field => field.set("focus", true));
       };
       consumerRender = (state: S) => {
         const { name, Component, getValue, ...props } = this.props,
@@ -309,15 +316,14 @@ export const createFormsStore = <S extends IFormState>(
           errors,
           value,
           focus,
+          change: this.change,
           onChange: this.onChange,
           onBlur: this.onBlur,
           onFocus: this.onFocus
         });
       };
       componentDidUpdate(prev: IFieldProps<P, T>) {
-        const { name } = this.props;
-
-        if (name !== prev.name) {
+        if (this.props.name !== prev.name) {
           removeField(formId, prev.name);
         }
       }
