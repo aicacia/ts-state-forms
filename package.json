@@ -1,6 +1,6 @@
 {
   "name": "@stembord/state-forms",
-  "version": "0.2.10",
+  "version": "0.2.11",
   "description": "use forms with @stembord/state and @stembord/state-react",
   "repository": {
     "type": "git",
@@ -31,7 +31,7 @@
   "devDependencies": {
     "@stembord/changeset": ">= 0.1.4",
     "@stembord/state": ">= 0.2.4",
-    "@stembord/state-react": ">= 0.2.7",
+    "@stembord/state-react": ">= 0.2.8",
     "@types/enzyme": "^3.1.17",
     "@types/enzyme-adapter-react-16": "^1.0.3",
     "@types/jsdom": "^12.2.1",
@@ -61,7 +61,7 @@
     "immutable": ">= 4.0.0-rc.12",
     "@stembord/changeset": ">= 0.1.4",
     "@stembord/state": ">= 0.2.4",
-    "@stembord/state-react": ">= 0.2.7",
+    "@stembord/state-react": ">= 0.2.8",
     "react": ">= 16.8.1"
   }
 }
