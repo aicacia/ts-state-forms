@@ -18,7 +18,9 @@ const dom = new JSDOM("<!doctype html><html><body></body></html>");
 (global as any).document = dom.window.document;
 (global as any).window = dom.window;
 
-const state = new State({ forms: Map<string, Record<IForm>>() }),
+const INITIAL_STATE = { forms: Map<string, Record<IForm>>() };
+
+const state = new State(INITIAL_STATE),
   { Consumer, Provider } = createContext(state.getState()),
   { selectField, injectForm } = createFormsStore(state, Consumer);
 

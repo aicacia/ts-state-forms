@@ -1,6 +1,6 @@
 {
   "name": "@stembord/state-forms",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "use forms with @stembord/state and @stembord/state-react",
   "repository": {
     "type": "git",
@@ -30,28 +30,28 @@
   "readmeFilename": "README.md",
   "devDependencies": {
     "@stembord/changeset": ">= 0.1.4",
-    "@stembord/state": ">= 0.2.2",
-    "@stembord/state-react": ">= 0.2.6",
-    "@types/enzyme": "^3.1.15",
+    "@stembord/state": ">= 0.2.4",
+    "@stembord/state-react": ">= 0.2.7",
+    "@types/enzyme": "^3.1.17",
     "@types/enzyme-adapter-react-16": "^1.0.3",
     "@types/jsdom": "^12.2.1",
-    "@types/react": "^16.7.18",
+    "@types/react": "^16.8.2",
     "@types/tape": "^4.2.33",
     "@types/uuid": "^3.4.4",
     "enzyme": "^3.8.0",
-    "enzyme-adapter-react-16": "^1.7.1",
+    "enzyme-adapter-react-16": "^1.9.1",
     "immutable": ">= 4.0.0-rc.12",
-    "jsdom": "^13.1.0",
-    "prettier": "^1.15.3",
+    "jsdom": "^13.2.0",
+    "prettier": "^1.16.4",
     "prettier-tslint": "^0.4.2",
-    "react": "^16.7.0",
-    "react-dom": "^16.7.0",
+    "react": "^16.8.1",
+    "react-dom": "^16.8.1",
     "tap-spec": "^5.0.0",
-    "tape": "^4.9.2",
-    "ts-node": "^7.0.1",
+    "tape": "^4.10.0",
+    "ts-node": "^8.0.2",
     "tslint": "^5.12.0",
-    "tslint-config-prettier": "^1.17.0",
-    "typescript": "^3.2.2"
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.3.3"
   },
   "dependencies": {
     "@stembord/debounce": "^0.1.2",
@@ -60,8 +60,8 @@
   "peerDependencies": {
     "immutable": ">= 4.0.0-rc.12",
     "@stembord/changeset": ">= 0.1.4",
-    "@stembord/state": ">= 0.2.2",
-    "@stembord/state-react": ">= 0.2.6",
-    "react": ">= 16.7.0"
+    "@stembord/state": ">= 0.2.4",
+    "@stembord/state-react": ">= 0.2.7",
+    "react": ">= 16.8.1"
   }
 }

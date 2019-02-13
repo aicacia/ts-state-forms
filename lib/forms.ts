@@ -1,7 +1,7 @@
 import { Changeset, IError } from "@stembord/changeset";
 import { debounce } from "@stembord/debounce";
 import { State, Store } from "@stembord/state";
-import { IConsumer } from "@stembord/state-react";
+import { createContext } from "@stembord/state-react";
 import { Map, Record } from "immutable";
 import * as React from "react";
 import { v4 } from "uuid";
@@ -105,7 +105,7 @@ const defaultPropsField = {
 
 export const createFormsStore = <S extends IFormState>(
   state: State<S>,
-  Consumer: IConsumer<S>
+  Consumer: ReturnType<typeof createContext>["Consumer"]
 ) => {
   const store: Store<S, Forms> = state.getStore(STORE_NAME as any) as any,
     validators: IValidators = {};
@@ -197,14 +197,14 @@ export const createFormsStore = <S extends IFormState>(
     store.updateState(state => state.set(formId, Form({ fields })));
   };
 
-  const selectForm = ({ forms }: S, formId: string): Record<IForm> =>
-    forms.get(formId, Form());
+  const selectForm = (state: Record<S>, formId: string): Record<IForm> =>
+    state.get("forms").get(formId, Form());
 
-  const selectFormExists = ({ forms }: S, formId: string): boolean =>
-    forms.has(formId);
+  const selectFormExists = (state: Record<S>, formId: string): boolean =>
+    state.get("forms").has(formId);
 
   const selectField = <T = any>(
-    state: S,
+    state: Record<S>,
     formId: string,
     name: string
   ): Record<IField<T>> =>
@@ -303,7 +303,7 @@ export const createFormsStore = <S extends IFormState>(
       onFocus = () => {
         updateField(formId, this.props.name, field => field.set("focus", true));
       };
-      consumerRender = (state: S) => {
+      consumerRender = (state: Record<S>) => {
         const { name, Component, getValue, ...props } = this.props,
           field = selectField<T>(state, formId, name),
           value = field.get("value"),
@@ -377,7 +377,7 @@ export const createFormsStore = <S extends IFormState>(
             .get("fields", Map())
             .map(field => field.get("value"));
         };
-        consumerRender = (state: S) => {
+        consumerRender = (state: Record<S>) => {
           return (
             selectFormExists(state, this._formId) &&
             React.createElement(Component, {
