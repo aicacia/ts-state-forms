@@ -1,5 +1,5 @@
-import { State } from "@stembord/state";
-import { createContext } from "@stembord/state-react";
+import { State } from "@aicacia/state";
+import { createContext } from "@aicacia/state-react";
 import * as Enzyme from "enzyme";
 import * as EnzymeAdapter from "enzyme-adapter-react-16";
 import { Map, Record } from "immutable";
@@ -22,7 +22,7 @@ const INITIAL_STATE = { forms: Map<string, Record<IForm>>() };
 
 const state = new State(INITIAL_STATE),
   { Consumer, Provider } = createContext(state.getState()),
-  { selectField, injectForm } = createFormsStore(state, Consumer);
+  { selectField, selectForm, injectForm } = createFormsStore(state, Consumer);
 
 Enzyme.configure({ adapter: new EnzymeAdapter() });
 
@@ -47,7 +47,12 @@ class TestInput extends React.PureComponent<ITestInputProps> {
       <div>
         {focus && <span className="focus">Focus</span>}
         <label>{label}</label>
-        {error && errors.map(error => <span>{error.message}</span>)}
+        {error &&
+          errors.map((error, index) => (
+            <span className="error" key={index}>
+              {error.get("message")}
+            </span>
+          ))}
         <input
           value={value}
           onChange={onChange}
@@ -79,7 +84,12 @@ function SelectInput<T = any>({
   return (
     <div>
       <label>{label}</label>
-      {error && errors.map(error => <span>{error.message}</span>)}
+      {error &&
+        errors.map((error, index) => (
+          <span className="error" key={index}>
+            {error.get("message")}
+          </span>
+        ))}
       <select
         value={getDisplayValue(value)}
         onChange={onChange}
@@ -141,7 +151,8 @@ class Form extends React.PureComponent<IFormProps> {
 }
 
 const ConnectedForm = injectForm<IFormValues>({
-  changeset: changeset => changeset
+  timeout: 0,
+  changeset: changeset => changeset.validateRequired(["name", "gender"])
 })(Form);
 
 interface IRootState {
@@ -224,6 +235,19 @@ tape("connect update", (assert: tape.Test) => {
     selectField(state.getState(), formId, "gender").get("value"),
     GENDERS[1],
     "store's gender should update"
+  );
+
+  wrapper.find("input").simulate("change", { target: { value: "" } });
+  assert.deepEquals(
+    selectField(state.getState(), formId, "name")
+      .get("errors")
+      .toJS(),
+    [{ message: "required", values: [] }],
+    "store's should have errors from changeset"
+  );
+  assert.false(
+    selectForm(state.getState(), formId).get("valid"),
+    "store's should not be valid"
   );
 
   assert.end();

@@ -1,6 +1,6 @@
 # js-state-forms
 
-use forms with @stembord/state and @stembord/state-react
+use forms with @aicacia/state and @aicacia/state-react
 
 ## createFormsStore
 
@@ -27,7 +27,7 @@ export const {
 ```tsx
 // "./lib/components/Form"
 import axios from "axios";
-import { IInputProps, IInjectedFormProps } from "@stembord/state-forms";
+import { IInputProps, IInjectedFormProps } from "@aicacia/state-forms";
 import { injectForm } from "../path/to/forms";
 
 interface ICustomInputProps extends IInputProps<string> {}

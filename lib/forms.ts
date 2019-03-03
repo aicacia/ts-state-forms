@@ -1,9 +1,10 @@
-import { Changeset, IError } from "@stembord/changeset";
-import { debounce } from "@stembord/debounce";
-import { State, Store } from "@stembord/state";
-import { createContext } from "@stembord/state-react";
-import { Map, Record } from "immutable";
+import { Changeset, IChangesetError } from "@aicacia/changeset";
+import { debounce } from "@aicacia/debounce";
+import { State, Store } from "@aicacia/state";
+import { createContext } from "@aicacia/state-react";
+import { List, Map, Record } from "immutable";
 import * as React from "react";
+import { isNumber } from "util";
 import { v4 } from "uuid";
 
 export const INITIAL_STATE = Map<string, Record<IForm>>();
@@ -12,13 +13,13 @@ export const STORE_NAME = "forms";
 export interface IField<T = any> {
   value: T;
   focus: boolean;
-  errors: IError[];
+  errors: List<Record<IChangesetError>>;
 }
 
 export const Field = Record<IField>({
   value: "",
   focus: false,
-  errors: []
+  errors: List()
 });
 
 export interface IForm {
@@ -35,7 +36,7 @@ export type Forms = Map<string, Record<IForm>>;
 
 export interface IInputProps<T = any> {
   error: boolean;
-  errors: IError[];
+  errors: List<Record<IChangesetError>>;
   value: T;
   focus: boolean;
   onChange: React.ChangeEventHandler<
@@ -65,8 +66,8 @@ export type IFieldProps<P extends IInputProps<T>, T = any> = Pick<
   getValue?: IGetValueFn<T>;
 };
 
-export interface IFormProps<D = {}> {
-  defaults?: D;
+export interface IFormProps<T extends {}> {
+  defaults?: T;
 }
 
 class FieldComponent<
@@ -78,15 +79,15 @@ export interface IInjectedFormProps {
   valid: boolean;
   Field: typeof FieldComponent;
   change<T = any>(name: string, value: T): void;
-  setErrors(errors: { [key: string]: IError[] }): Record<IForm>;
+  setErrors(errors: { [key: string]: List<IChangesetError> }): Record<IForm>;
   resetForm(): void;
   getFormData(): Map<string, any>;
 }
 
-export interface IOptions {
+export interface IOptions<T extends {}> {
   name?: string;
   timeout?: number;
-  changeset(changeset: Changeset): Changeset;
+  changeset(changeset: Changeset<T>): Changeset<T>;
 }
 
 export interface IValidators {
@@ -129,39 +130,38 @@ export const createFormsStore = <S extends IFormState>(
     }, Map<string, Record<IForm>>());
   };
 
-  const create = <D>(
-    changesetFn: (changeset: Changeset) => Changeset,
+  const create = <T extends {}>(
+    changesetFn: (changeset: Changeset<T>) => Changeset<T>,
     timeout: number,
     formName?: string,
-    defaults?: D
+    defaults?: Partial<T>
   ): string => {
     const formId = formName + v4();
 
     resetForm(formId, defaults || {});
 
-    const changeset = new Changeset({ ...(defaults as any) });
-    validators[formId] = debounce(() => {
-      const changes = store
+    let changeset = new Changeset<T>(defaults as any);
+
+    const validator = () => {
+      const changes: T = store
         .getState()
         .get(formId, Form())
         .get("fields", Map<string, Record<IField>>())
         .map(field => field.get("value", ""))
-        .toJS();
+        .toJS() as any;
 
-      changeset.addChanges(changes);
-      changeset.clearErrors();
-      changesetFn(changeset);
+      changeset = changesetFn(changeset.addChanges(changes).clearErrors());
 
       store.updateState(state => {
         let valid = true;
 
         const form: Record<IForm> = state.get(formId, Form()),
           fields = form
-            .get("fields", Map<string, Record<IField>>())
+            .get("fields", Map<keyof T, Record<IField>>())
             .map((field, key) => {
-              const errors = changeset.getError(key);
+              const errors = changeset.getError(key as any);
 
-              if (errors.length !== 0) {
+              if (errors.size !== 0) {
                 valid = false;
               }
               return field.set("errors", errors);
@@ -172,7 +172,9 @@ export const createFormsStore = <S extends IFormState>(
           form.set("valid", valid).set("fields", fields)
         );
       });
-    }, timeout);
+    };
+
+    validators[formId] = timeout > 0 ? debounce(validator, timeout) : validator;
 
     return formId;
   };
@@ -182,7 +184,7 @@ export const createFormsStore = <S extends IFormState>(
     delete validators[formId];
   };
 
-  const resetForm = <D>(formId: string, defaults: D) => {
+  const resetForm = <T extends {}>(formId: string, defaults: Partial<T>) => {
     const fields = Object.keys(defaults || {}).reduce(
       (form, key) =>
         form.set(
@@ -221,11 +223,14 @@ export const createFormsStore = <S extends IFormState>(
     );
   };
 
-  const setErrors = (formId: string, errors: { [key: string]: IError[] }) => {
+  const setErrors = <T extends {}>(
+    formId: string,
+    errors: Map<keyof T, List<Record<IChangesetError>>>
+  ) => {
     store.updateState(state => {
       const form: Record<IForm> = state.get(formId, Form()),
         fields = Object.keys(errors).reduce((fields, key) => {
-          const errorArray = errors[key],
+          const errorArray = errors.get(key as any),
             field = fields.get(key);
 
           if (errorArray && field) {
@@ -312,7 +317,7 @@ export const createFormsStore = <S extends IFormState>(
 
         return React.createElement(Component as any, {
           ...props,
-          error: errors.length !== 0,
+          error: !errors.isEmpty(),
           errors,
           value,
           focus,
@@ -333,12 +338,12 @@ export const createFormsStore = <S extends IFormState>(
     };
   };
 
-  const injectForm = <D>(options: IOptions) => {
+  const injectForm = <T extends {}>(options: IOptions<T>) => {
     const formName = options.name || "",
-      timeout = options.timeout || 300,
+      timeout = isNumber(options.timeout) ? options.timeout : 300,
       changesetFn = options.changeset;
 
-    return <P extends IInjectedFormProps & IFormProps<D>>(
+    return <P extends IInjectedFormProps & IFormProps<T>>(
       Component: React.ComponentType<P>
     ): React.ComponentClass<
       Pick<P, Exclude<keyof P, keyof IInjectedFormProps>>
@@ -366,7 +371,7 @@ export const createFormsStore = <S extends IFormState>(
         change = <T = any>(name: string, value: T) => {
           changeField(this._formId, name, value);
         };
-        setErrors = (errors: { [key: string]: IError[] }) => {
+        setErrors = (errors: Map<keyof T, List<Record<IChangesetError>>>) => {
           setErrors(this._formId, errors);
         };
         resetForm = () => {

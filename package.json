@@ -1,10 +1,10 @@
 {
-  "name": "@stembord/state-forms",
-  "version": "0.2.11",
-  "description": "use forms with @stembord/state and @stembord/state-react",
+  "name": "@aicacia/state-forms",
+  "version": "0.1.0",
+  "description": "use forms with @aicacia/state and @aicacia/state-react",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.com/stembord/ts-state-forms.git"
+    "url": "https://gitlab.com/aicacia/ts-state-forms.git"
   },
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -29,39 +29,39 @@
   "license": "(MIT OR Apache-2.0)",
   "readmeFilename": "README.md",
   "devDependencies": {
-    "@stembord/changeset": ">= 0.1.4",
-    "@stembord/state": ">= 0.2.4",
-    "@stembord/state-react": ">= 0.2.8",
-    "@types/enzyme": "^3.1.17",
-    "@types/enzyme-adapter-react-16": "^1.0.3",
-    "@types/jsdom": "^12.2.1",
-    "@types/react": "^16.8.2",
+    "@aicacia/changeset": ">= 0.1.0",
+    "@aicacia/state": ">= 0.1.0",
+    "@aicacia/state-react": ">= 0.1.0",
+    "@types/enzyme": "^3.9.0",
+    "@types/enzyme-adapter-react-16": "^1.0.5",
+    "@types/jsdom": "^12.2.2",
+    "@types/react": "^16.8.4",
     "@types/tape": "^4.2.33",
     "@types/uuid": "^3.4.4",
-    "enzyme": "^3.8.0",
+    "enzyme": "^3.9.0",
     "enzyme-adapter-react-16": "^1.9.1",
     "immutable": ">= 4.0.0-rc.12",
     "jsdom": "^13.2.0",
     "prettier": "^1.16.4",
     "prettier-tslint": "^0.4.2",
-    "react": "^16.8.1",
-    "react-dom": "^16.8.1",
+    "react": "^16.8.3",
+    "react-dom": "^16.8.3",
     "tap-spec": "^5.0.0",
-    "tape": "^4.10.0",
+    "tape": "^4.10.1",
     "ts-node": "^8.0.2",
-    "tslint": "^5.12.0",
+    "tslint": "^5.13.0",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "^3.3.3"
+    "typescript": "^3.3.3333"
   },
   "dependencies": {
-    "@stembord/debounce": "^0.1.2",
+    "@aicacia/debounce": "^0.1.0",
     "uuid": "^3.3.2"
   },
   "peerDependencies": {
     "immutable": ">= 4.0.0-rc.12",
-    "@stembord/changeset": ">= 0.1.4",
-    "@stembord/state": ">= 0.2.4",
-    "@stembord/state-react": ">= 0.2.8",
-    "react": ">= 16.8.1"
+    "@aicacia/changeset": ">= 0.1.0",
+    "@aicacia/state": ">= 0.1.0",
+    "@aicacia/state-react": ">= 0.1.0",
+    "react": ">= 16.8.3"
   }
 }
