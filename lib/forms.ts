@@ -7,37 +7,37 @@ import * as React from "react";
 import { isNumber } from "util";
 import { v4 } from "uuid";
 
-export const INITIAL_STATE = Map<string, Record<IForm>>();
+export const INITIAL_STATE = Map<string, Record<IForm<any>>>();
 export const STORE_NAME = "forms";
 
-export interface IField<T = any> {
-  value: T;
+export interface IField<V> {
+  value: V;
   focus: boolean;
   errors: List<Record<IChangesetError>>;
 }
 
-export const Field = Record<IField>({
+export const Field = Record<IField<any>>({
   value: "",
   focus: false,
   errors: List()
 });
 
-export interface IForm {
+export interface IForm<T extends {}> {
   valid: boolean;
-  fields: Map<string, Record<IField>>;
+  fields: Map<keyof T, Record<IField<T[keyof T]>>>;
 }
 
-export const Form = Record<IForm>({
+export const Form = Record<IForm<any>>({
   valid: true,
   fields: Map()
 });
 
-export type Forms = Map<string, Record<IForm>>;
+export type Forms = Map<string, Record<IForm<any>>>;
 
-export interface IInputProps<T = any> {
+export interface IInputProps<V> {
   error: boolean;
   errors: List<Record<IChangesetError>>;
-  value: T;
+  value: V;
   focus: boolean;
   onChange: React.ChangeEventHandler<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -48,40 +48,40 @@ export interface IInputProps<T = any> {
   onFocus: React.FocusEventHandler<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
   >;
-  change(value: T): void;
+  change(value: V): void;
 }
 
-export type IGetValueFn<T> = (
+export type IGetValueFn<V> = (
   e: React.ChangeEvent<
     HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
   >
-) => T;
+) => V;
 
-export type IFieldProps<P extends IInputProps<T>, T = any> = Pick<
+export type IFieldProps<P extends IInputProps<T[keyof T]>, T extends {}> = Pick<
   P,
-  Exclude<keyof P, keyof IInputProps<T>>
+  Exclude<keyof P, keyof IInputProps<T[keyof T]>>
 > & {
-  name: string;
+  name: keyof T;
   Component: React.ComponentType<P> | "input" | "select" | "textarea";
-  getValue?: IGetValueFn<T>;
+  getValue?: IGetValueFn<T[keyof T]>;
 };
 
-export interface IFormProps<T extends {}> {
-  defaults?: T;
-}
+type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
-class FieldComponent<
-  P extends IInputProps<T>,
-  T = any
-> extends React.PureComponent<IFieldProps<P, T>> {}
+class FieldComponent<P extends IInputProps<any>> extends React.PureComponent<
+  IFieldProps<P, any>
+> {}
 
-export interface IInjectedFormProps {
+export interface IInjectedFormProps<T extends {}> {
   valid: boolean;
   Field: typeof FieldComponent;
-  change<T = any>(name: string, value: T): void;
-  setErrors(errors: { [key: string]: List<IChangesetError> }): Record<IForm>;
+  defaults?: Partial<T>;
+  change(name: keyof T, value: T[keyof T]): void;
+  setErrors(
+    errors: { [P in keyof T]: List<IChangesetError> }
+  ): Record<IForm<T>>;
   resetForm(): void;
-  getFormData(): Map<string, any>;
+  getFormData(): Map<keyof T, T[keyof T]>;
 }
 
 export interface IOptions<T extends {}> {
@@ -91,7 +91,7 @@ export interface IOptions<T extends {}> {
 }
 
 export interface IValidators {
-  [key: string]: () => void;
+  [formId: string]: () => void;
 }
 
 export interface IFormState {
@@ -124,10 +124,10 @@ export const createFormsStore = <S extends IFormState>(
           fields: Object.keys(jsonForm.fields || []).reduce((fields, key) => {
             const jsonField = jsonForm[key];
             return fields.set(key, Field(jsonField));
-          }, Map<string, Record<IField>>())
+          }, Map<string, Record<IField<any>>>())
         })
       );
-    }, Map<string, Record<IForm>>());
+    }, Map<string, Record<IForm<any>>>());
   };
 
   const create = <T extends {}>(
@@ -138,15 +138,15 @@ export const createFormsStore = <S extends IFormState>(
   ): string => {
     const formId = formName + v4();
 
-    resetForm(formId, defaults || {});
+    resetForm<T>(formId, defaults || {});
 
-    let changeset = new Changeset<T>(defaults as any);
+    let changeset = new Changeset<T>(defaults || {});
 
     const validator = () => {
       const changes: T = store
         .getState()
         .get(formId, Form())
-        .get("fields", Map<string, Record<IField>>())
+        .get("fields", Map<string, Record<IField<T[keyof T]>>>())
         .map(field => field.get("value", ""))
         .toJS() as any;
 
@@ -155,9 +155,9 @@ export const createFormsStore = <S extends IFormState>(
       store.updateState(state => {
         let valid = true;
 
-        const form: Record<IForm> = state.get(formId, Form()),
+        const form: Record<IForm<T>> = state.get(formId, Form()),
           fields = form
-            .get("fields", Map<keyof T, Record<IField>>())
+            .get("fields", Map<keyof T, Record<IField<T[keyof T]>>>())
             .map((field, key) => {
               const errors = changeset.getError(key as any);
 
@@ -188,88 +188,91 @@ export const createFormsStore = <S extends IFormState>(
     const fields = Object.keys(defaults || {}).reduce(
       (form, key) =>
         form.set(
-          key,
+          key as any,
           Field({
             value: (defaults as any)[key]
           })
         ),
-      Map<string, Record<IField>>()
+      Map<keyof T, Record<IField<T[keyof T]>>>()
     );
 
     store.updateState(state => state.set(formId, Form({ fields })));
   };
 
-  const selectForm = (state: Record<S>, formId: string): Record<IForm> =>
-    state.get("forms").get(formId, Form());
+  const selectForm = <T extends {}>(
+    state: Record<S>,
+    formId: string
+  ): Record<IForm<T>> => state.get("forms").get(formId, Form());
 
   const selectFormExists = (state: Record<S>, formId: string): boolean =>
     state.get("forms").has(formId);
 
-  const selectField = <T = any>(
+  const selectField = <T extends {}>(
     state: Record<S>,
     formId: string,
-    name: string
-  ): Record<IField<T>> =>
-    selectForm(state, formId)
-      .get("fields", Map<string, Record<IField>>())
+    name: keyof T
+  ): Record<IField<T[keyof T]>> =>
+    selectForm<T>(state, formId)
+      .get("fields", Map<keyof T, Record<IField<T[keyof T]>>>())
       .get(name, Field());
 
-  const updateForm = (
+  const updateForm = <T extends {}>(
     formId: string,
-    update: (form: Record<IForm>) => Record<IForm>
-  ) => {
+    update: (form: Record<IForm<T>>) => Record<IForm<T>>
+  ) =>
     store.updateState(state =>
       state.set(formId, update(state.get(formId, Form())))
     );
-  };
 
   const setErrors = <T extends {}>(
     formId: string,
     errors: Map<keyof T, List<Record<IChangesetError>>>
-  ) => {
+  ) =>
     store.updateState(state => {
-      const form: Record<IForm> = state.get(formId, Form()),
+      const form: Record<IForm<T>> = state.get(formId, Form()),
         fields = Object.keys(errors).reduce((fields, key) => {
           const errorArray = errors.get(key as any),
-            field = fields.get(key);
+            field = fields.get(key as any);
 
           if (errorArray && field) {
-            fields = fields.set(key, field.set("errors", errorArray));
+            fields = fields.set(key as any, field.set("errors", errorArray));
           }
 
           return fields;
-        }, form.get("fields", Map<string, Record<IField>>()));
+        }, form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>()));
 
       return state.set(formId, form.set("fields", fields));
     });
-  };
 
-  const updateField = <T = any>(
+  const updateField = <T extends {}>(
     formId: string,
-    name: string,
-    update: (field: Record<IField<T>>) => Record<IField<T>>
-  ) => {
+    name: keyof T,
+    update: (field: Record<IField<T[keyof T]>>) => Record<IField<T[keyof T]>>
+  ) =>
     store.updateState(state => {
-      const form: Record<IForm> = state.get(formId, Form()),
-        fields = form.get("fields", Map<string, Record<IField>>()),
-        field: Record<IField> = fields.get(name, Field());
+      const form: Record<IForm<T>> = state.get(formId, Form()),
+        fields = form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>()),
+        field: Record<IField<T[keyof T]>> = fields.get(name, Field());
 
       return state.set(
         formId,
         form.set("fields", fields.set(name, update(field)))
       );
     });
-  };
 
-  const changeField = <T>(formId: string, name: string, value: T) => {
+  const changeField = <T extends {}>(
+    formId: string,
+    name: keyof T,
+    value: T[keyof T]
+  ) => {
     updateField(formId, name, field => field.set("value", value));
     validators[formId]();
   };
 
-  const removeField = (formId: string, name: string) => {
+  const removeField = <T extends {}>(formId: string, name: keyof T) =>
     store.updateState(state => {
-      const form: Record<IForm> = state.get(formId, Form()),
-        fields = form.get("fields", Map<string, Record<IField>>());
+      const form: Record<IForm<T>> = state.get(formId, Form()),
+        fields = form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>());
 
       if (form) {
         return state.set(formId, form.set("fields", fields.remove(name)));
@@ -277,16 +280,14 @@ export const createFormsStore = <S extends IFormState>(
         return state;
       }
     });
-  };
 
-  const createFieldComponent = (formId: string) => {
+  const createFieldComponent = <T extends {}>(formId: string) => {
     return class FieldComponent<
-      P extends IInputProps,
-      T = any
+      P extends IInputProps<T[keyof T]>
     > extends React.PureComponent<IFieldProps<P, T>> {
       static defaultProps = defaultPropsField;
 
-      change = (value: T) => {
+      change = (value: T[keyof T]) => {
         changeField(formId, this.props.name, value);
       };
       onChange = (
@@ -294,19 +295,21 @@ export const createFormsStore = <S extends IFormState>(
           HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
       ) => {
-        changeField(
+        changeField<T>(
           formId,
           this.props.name,
-          (this.props.getValue as IGetValueFn<T>)(e)
+          (this.props.getValue as IGetValueFn<T[keyof T]>)(e)
         );
       };
       onBlur = () => {
-        updateField(formId, this.props.name, field =>
+        updateField<T>(formId, this.props.name, field =>
           field.set("focus", false)
         );
       };
       onFocus = () => {
-        updateField(formId, this.props.name, field => field.set("focus", true));
+        updateField<T>(formId, this.props.name, field =>
+          field.set("focus", true)
+        );
       };
       consumerRender = (state: Record<S>) => {
         const { name, Component, getValue, ...props } = this.props,
@@ -343,11 +346,11 @@ export const createFormsStore = <S extends IFormState>(
       timeout = isNumber(options.timeout) ? options.timeout : 300,
       changesetFn = options.changeset;
 
-    return <P extends IInjectedFormProps & IFormProps<T>>(
+    return <P extends IInjectedFormProps<T>>(
       Component: React.ComponentType<P>
     ): React.ComponentClass<
-      Pick<P, Exclude<keyof P, keyof IInjectedFormProps>>
-    > & { WrappedComponent: React.ComponentType<P> } => {
+      Omit<P, keyof IInjectedFormProps<T>> & { defaults?: Partial<T> }
+    > => {
       return class Form extends React.PureComponent<P> {
         static displayName = `Form(${Component.displayName ||
           Component.name ||
@@ -360,7 +363,7 @@ export const createFormsStore = <S extends IFormState>(
           super(props);
 
           this._formId = create(changesetFn, timeout, formName, props.defaults);
-          this._Field = createFieldComponent(this._formId);
+          this._Field = createFieldComponent<T>(this._formId);
         }
         getFormId = () => {
           return this._formId;
@@ -368,7 +371,7 @@ export const createFormsStore = <S extends IFormState>(
         getField = () => {
           return this._Field;
         };
-        change = <T = any>(name: string, value: T) => {
+        change = (name: keyof T, value: T[keyof T]) => {
           changeField(this._formId, name, value);
         };
         setErrors = (errors: Map<keyof T, List<Record<IChangesetError>>>) => {

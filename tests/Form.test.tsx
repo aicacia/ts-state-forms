@@ -2,15 +2,14 @@ import { State } from "@aicacia/state";
 import { createContext } from "@aicacia/state-react";
 import * as Enzyme from "enzyme";
 import * as EnzymeAdapter from "enzyme-adapter-react-16";
-import { Map, Record } from "immutable";
 import { JSDOM } from "jsdom";
 import * as React from "react";
 import * as tape from "tape";
 import {
   createFormsStore,
-  IForm,
   IInjectedFormProps,
-  IInputProps
+  IInputProps,
+  INITIAL_STATE as forms
 } from "../lib";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>");
@@ -18,7 +17,7 @@ const dom = new JSDOM("<!doctype html><html><body></body></html>");
 (global as any).document = dom.window.document;
 (global as any).window = dom.window;
 
-const INITIAL_STATE = { forms: Map<string, Record<IForm>>() };
+const INITIAL_STATE = { forms };
 
 const state = new State(INITIAL_STATE),
   { Consumer, Provider } = createContext(state.getState()),
@@ -26,7 +25,7 @@ const state = new State(INITIAL_STATE),
 
 Enzyme.configure({ adapter: new EnzymeAdapter() });
 
-interface ITestInputProps extends IInputProps {
+interface ITestInputProps extends IInputProps<string> {
   label: React.ReactNode;
 }
 
@@ -64,13 +63,13 @@ class TestInput extends React.PureComponent<ITestInputProps> {
   }
 }
 
-interface ISelectInputProps<T = any> extends IInputProps<T> {
+interface ISelectInputProps<V> extends IInputProps<V> {
   label: React.ReactNode;
   children: React.ReactNode;
-  getDisplayValue(value: T): string;
+  getDisplayValue(value: V): string;
 }
 
-function SelectInput<T = any>({
+function SelectInput<V>({
   value,
   error,
   errors,
@@ -80,7 +79,7 @@ function SelectInput<T = any>({
   onFocus,
   getDisplayValue,
   children
-}: ISelectInputProps<T>) {
+}: ISelectInputProps<V>) {
   return (
     <div>
       <label>{label}</label>
@@ -102,18 +101,16 @@ function SelectInput<T = any>({
   );
 }
 
-interface IFormValues {
-  name: string;
-  gender: IGender;
-}
-interface IFormProps extends IInjectedFormProps {
-  defaults?: IFormValues;
-}
-
 interface IGender {
   key: number;
   value: "Male" | "Female";
 }
+
+interface IFormValues {
+  name: string;
+  gender: IGender;
+}
+interface IFormProps extends IInjectedFormProps<IFormValues> {}
 
 const GENDERS: IGender[] = [
     { key: 1, value: "Male" },

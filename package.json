@@ -1,6 +1,6 @@
 {
   "name": "@aicacia/state-forms",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "use forms with @aicacia/state and @aicacia/state-react",
   "repository": {
     "type": "git",
