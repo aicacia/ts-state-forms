@@ -3,10 +3,6 @@ image: node:latest
 before_script:
   - npm install
 
-cache:
-  paths:
-    - node_modules/
-
 test:
   script:
     - npm run build

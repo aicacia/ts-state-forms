@@ -121,6 +121,12 @@ const GENDERS: IGender[] = [
   getGenderDisplayValue = ({ value }: IGender) => value;
 
 class Form extends React.PureComponent<IFormProps> {
+  onFormChange = () => {
+    console.log("any change");
+  };
+  onFormChangeValid = () => {
+    console.log("valid change");
+  };
   render() {
     const { Field } = this.props;
 

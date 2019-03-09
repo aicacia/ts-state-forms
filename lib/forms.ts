@@ -72,11 +72,15 @@ class FieldComponent<P extends IInputProps<any>> extends React.PureComponent<
   IFieldProps<P, any>
 > {}
 
-export interface IInjectedFormProps<T extends {}> {
+export interface IExposedFormProps<T extends {}> {
+  defaults?: Partial<T>;
+}
+
+export interface IInjectedFormProps<T extends {}> extends IExposedFormProps<T> {
   valid: boolean;
   Field: typeof FieldComponent;
-  defaults?: Partial<T>;
   change(name: keyof T, value: T[keyof T]): void;
+  setOnChange(onChange: () => void): void;
   setErrors(
     errors: { [P in keyof T]: List<IChangesetError> }
   ): Record<IForm<T>>;
@@ -131,6 +135,7 @@ export const createFormsStore = <S extends IFormState>(
   };
 
   const create = <T extends {}>(
+    componentRef: React.RefObject<React.ComponentType<any>>,
     changesetFn: (changeset: Changeset<T>) => Changeset<T>,
     timeout: number,
     formName?: string,
@@ -152,9 +157,8 @@ export const createFormsStore = <S extends IFormState>(
 
       changeset = changesetFn(changeset.addChanges(changes).clearErrors());
 
+      let valid = true;
       store.updateState(state => {
-        let valid = true;
-
         const form: Record<IForm<T>> = state.get(formId, Form()),
           fields = form
             .get("fields", Map<keyof T, Record<IField<T[keyof T]>>>())
@@ -172,6 +176,16 @@ export const createFormsStore = <S extends IFormState>(
           form.set("valid", valid).set("fields", fields)
         );
       });
+
+      const component = componentRef.current as any;
+      if (component) {
+        if (component.onFormChange) {
+          component.onFormChange();
+        }
+        if (valid && component.onFormChangeValid) {
+          component.onFormChangeValid();
+        }
+      }
     };
 
     validators[formId] = timeout > 0 ? debounce(validator, timeout) : validator;
@@ -349,12 +363,16 @@ export const createFormsStore = <S extends IFormState>(
     return <P extends IInjectedFormProps<T>>(
       Component: React.ComponentType<P>
     ): React.ComponentClass<
-      Omit<P, keyof IInjectedFormProps<T>> & { defaults?: Partial<T> }
+      Omit<P, keyof IInjectedFormProps<T>> & IExposedFormProps<T>
     > => {
       return class Form extends React.PureComponent<P> {
         static displayName = `Form(${Component.displayName ||
           Component.name ||
           "Component"})`;
+
+        componentRef: React.RefObject<
+          React.ComponentType<P>
+        > = React.createRef();
 
         private _formId: string;
         private _Field: typeof FieldComponent;
@@ -362,7 +380,13 @@ export const createFormsStore = <S extends IFormState>(
         constructor(props: P) {
           super(props);
 
-          this._formId = create(changesetFn, timeout, formName, props.defaults);
+          this._formId = create(
+            this.componentRef,
+            changesetFn,
+            timeout,
+            formName,
+            props.defaults
+          );
           this._Field = createFieldComponent<T>(this._formId);
         }
         getFormId = () => {
@@ -390,6 +414,7 @@ export const createFormsStore = <S extends IFormState>(
             selectFormExists(state, this._formId) &&
             React.createElement(Component, {
               ...this.props,
+              ref: this.componentRef,
               valid: selectForm(state, this._formId).get("valid", true),
               Field: this._Field,
               change: this.change,
