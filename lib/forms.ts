@@ -82,7 +82,7 @@ export interface IInjectedFormProps<T extends {}> extends IExposedFormProps<T> {
   change(name: keyof T, value: T[keyof T]): void;
   setOnChange(onChange: () => void): void;
   setErrors(
-    errors: { [P in keyof T]: List<IChangesetError> }
+    errors: Map<keyof T, List<Record<IChangesetError>>>
   ): Record<IForm<T>>;
   resetForm(): void;
   getFormData(): Map<keyof T, T[keyof T]>;
