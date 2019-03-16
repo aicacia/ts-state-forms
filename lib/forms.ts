@@ -80,7 +80,6 @@ export interface IInjectedFormProps<T extends {}> extends IExposedFormProps<T> {
   valid: boolean;
   Field: typeof FieldComponent;
   change(name: keyof T, value: T[keyof T]): void;
-  setOnChange(onChange: () => void): void;
   setErrors(
     errors: Map<keyof T, List<Record<IChangesetError>>>
   ): Record<IForm<T>>;
@@ -244,9 +243,8 @@ export const createFormsStore = <S extends IFormState>(
   ) =>
     store.updateState(state => {
       const form: Record<IForm<T>> = state.get(formId, Form()),
-        fields = Object.keys(errors).reduce((fields, key) => {
-          const errorArray = errors.get(key as any),
-            field = fields.get(key as any);
+        fields = errors.entrySeq().reduce((fields, [key, errorArray]) => {
+          const field = fields.get(key);
 
           if (errorArray && field) {
             fields = fields.set(key as any, field.set("errors", errorArray));

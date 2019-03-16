@@ -1,7 +1,9 @@
+import { ChangesetError, IChangesetError } from "@aicacia/changeset";
 import { State } from "@aicacia/state";
 import { createContext } from "@aicacia/state-react";
 import * as Enzyme from "enzyme";
 import * as EnzymeAdapter from "enzyme-adapter-react-16";
+import { List, Map, Record } from "immutable";
 import { JSDOM } from "jsdom";
 import * as React from "react";
 import * as tape from "tape";
@@ -21,7 +23,10 @@ const INITIAL_STATE = { forms };
 
 const state = new State(INITIAL_STATE),
   { Consumer, Provider } = createContext(state.getState()),
-  { selectField, selectForm, injectForm } = createFormsStore(state, Consumer);
+  { selectField, selectForm, injectForm, setErrors } = createFormsStore(
+    state,
+    Consumer
+  );
 
 Enzyme.configure({ adapter: new EnzymeAdapter() });
 
@@ -251,6 +256,21 @@ tape("connect update", (assert: tape.Test) => {
   assert.false(
     selectForm(state.getState(), formId).get("valid"),
     "store's should not be valid"
+  );
+
+  setErrors(
+    formId,
+    Map<keyof IFormValues, List<Record<IChangesetError>>>().set(
+      "gender",
+      List([ChangesetError({ message: "invalid_gender", values: [] })])
+    )
+  );
+  assert.deepEquals(
+    selectField(state.getState(), formId, "gender")
+      .get("errors")
+      .toJS(),
+    [{ message: "invalid_gender", values: [] }],
+    "store's should have errors from setErrors"
   );
 
   assert.end();
