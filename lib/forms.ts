@@ -12,12 +12,14 @@ export const STORE_NAME = "forms";
 
 export interface IField<V> {
   value: V;
+  visited: boolean;
   focus: boolean;
   errors: List<Record<IChangesetError>>;
 }
 
 export const Field = Record<IField<any>>({
   value: "",
+  visited: false,
   focus: false,
   errors: List()
 });
@@ -137,14 +139,14 @@ export const createFormsStore = <S extends IFormState>(
     componentRef: React.RefObject<React.ComponentType<any>>,
     changesetFn: (changeset: Changeset<T>) => Changeset<T>,
     timeout: number,
-    formName?: string,
-    defaults?: Partial<T>
+    defaults: Partial<T>,
+    formName?: string
   ): string => {
     const formId = formName + v4();
 
-    resetForm<T>(formId, defaults || {});
+    resetForm<T>(formId, defaults);
 
-    let changeset = new Changeset<T>(defaults || {});
+    let changeset = new Changeset<T>(defaults);
 
     const validator = () => {
       const changes: T = store
@@ -162,12 +164,16 @@ export const createFormsStore = <S extends IFormState>(
           fields = form
             .get("fields", Map<keyof T, Record<IField<T[keyof T]>>>())
             .map((field, key) => {
-              const errors = changeset.getError(key as any);
+              const errors = changeset.getError(key);
 
               if (errors.size !== 0) {
                 valid = false;
               }
-              return field.set("errors", errors);
+              if (field.get("visited")) {
+                return field.set("errors", errors);
+              } else {
+                return field;
+              }
             });
 
         return state.set(
@@ -277,7 +283,9 @@ export const createFormsStore = <S extends IFormState>(
     name: keyof T,
     value: T[keyof T]
   ) => {
-    updateField(formId, name, field => field.set("value", value));
+    updateField(formId, name, field =>
+      field.set("visited", true).set("value", value)
+    );
     validators[formId]();
   };
 
@@ -320,7 +328,7 @@ export const createFormsStore = <S extends IFormState>(
       };
       onFocus = () => {
         updateField<T>(formId, this.props.name, field =>
-          field.set("focus", true)
+          field.set("visited", true).set("focus", true)
         );
       };
       consumerRender = (state: Record<S>) => {
@@ -382,8 +390,8 @@ export const createFormsStore = <S extends IFormState>(
             this.componentRef,
             changesetFn,
             timeout,
-            formName,
-            props.defaults
+            props.defaults || {},
+            formName
           );
           this._Field = createFieldComponent<T>(this._formId);
         }
