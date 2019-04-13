@@ -82,6 +82,7 @@ export interface IInjectedFormProps<T extends {}> extends IExposedFormProps<T> {
   valid: boolean;
   Field: typeof FieldComponent;
   change(name: keyof T, value: T[keyof T]): void;
+  unsafeChange(name: keyof T, value: T[keyof T]): void;
   setErrors(
     errors: Map<keyof T, List<Record<IChangesetError>>>
   ): Record<IForm<T>>;
@@ -278,14 +279,21 @@ export const createFormsStore = <S extends IFormState>(
       );
     });
 
+  const unsafeChangeField = <T extends {}>(
+    formId: string,
+    name: keyof T,
+    value: T[keyof T]
+  ) =>
+    updateField(formId, name, field =>
+      field.set("visited", true).set("value", value)
+    );
+
   const changeField = <T extends {}>(
     formId: string,
     name: keyof T,
     value: T[keyof T]
   ) => {
-    updateField(formId, name, field =>
-      field.set("visited", true).set("value", value)
-    );
+    unsafeChangeField(formId, name, value);
     validators[formId]();
   };
 
@@ -309,6 +317,9 @@ export const createFormsStore = <S extends IFormState>(
 
       change = (value: T[keyof T]) => {
         changeField(formId, this.props.name, value);
+      };
+      unsafeChange = (value: T[keyof T]) => {
+        unsafeChangeField(formId, this.props.name, value);
       };
       onChange = (
         e: React.ChangeEvent<
@@ -395,26 +406,20 @@ export const createFormsStore = <S extends IFormState>(
           );
           this._Field = createFieldComponent<T>(this._formId);
         }
-        getFormId = () => {
-          return this._formId;
-        };
-        getField = () => {
-          return this._Field;
-        };
-        change = (name: keyof T, value: T[keyof T]) => {
+        getFormId = () => this._formId;
+        getField = () => this._Field;
+        change = (name: keyof T, value: T[keyof T]) =>
           changeField(this._formId, name, value);
-        };
-        setErrors = (errors: Map<keyof T, List<Record<IChangesetError>>>) => {
+        unsafeChange = (name: keyof T, value: T[keyof T]) =>
+          unsafeChangeField(this._formId, name, value);
+        setErrors = (errors: Map<keyof T, List<Record<IChangesetError>>>) =>
           setErrors(this._formId, errors);
-        };
-        resetForm = () => {
+        resetForm = () =>
           resetForm(this._formId, (this.props as any).defaults || {});
-        };
-        getFormData = () => {
-          return selectForm(store.state.getState(), this._formId)
+        getFormData = () =>
+          selectForm(store.state.getState(), this._formId)
             .get("fields", Map())
             .map(field => field.get("value"));
-        };
         consumerRender = (state: Record<S>) => {
           return (
             selectFormExists(state, this._formId) &&
@@ -424,6 +429,7 @@ export const createFormsStore = <S extends IFormState>(
               valid: selectForm(state, this._formId).get("valid", true),
               Field: this._Field,
               change: this.change,
+              unsafeChange: this.unsafeChange,
               setErrors: this.setErrors,
               resetForm: this.resetForm,
               getFormData: this.getFormData
