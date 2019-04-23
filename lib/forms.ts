@@ -1,7 +1,7 @@
-import { Changeset, IChangesetError } from "@aicacia/changeset";
-import { debounce } from "@aicacia/debounce";
-import { State, Store } from "@aicacia/state";
-import { createContext } from "@aicacia/state-react";
+import { Changeset, IChangesetError } from "@stembord/changeset";
+import { debounce } from "@stembord/debounce";
+import { State, Store } from "@stembord/state";
+import { createContext } from "@stembord/state-react";
 import { List, Map, Record } from "immutable";
 import * as React from "react";
 import { isNumber } from "util";

@@ -1,6 +1,6 @@
-import { ChangesetError, IChangesetError } from "@aicacia/changeset";
-import { State } from "@aicacia/state";
-import { createContext } from "@aicacia/state-react";
+import { ChangesetError, IChangesetError } from "@stembord/changeset";
+import { State } from "@stembord/state";
+import { createContext } from "@stembord/state-react";
 import * as Enzyme from "enzyme";
 import * as EnzymeAdapter from "enzyme-adapter-react-16";
 import { List, Map, Record } from "immutable";
