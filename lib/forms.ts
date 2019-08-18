@@ -100,6 +100,12 @@ export interface IValidators {
   [formId: string]: () => void;
 }
 
+type IChangesetFn<T> = (changeset: Changeset<T>) => Changeset<T>;
+
+export interface IChangesets {
+  [formId: string]: Changeset<any>;
+}
+
 export interface IFormState {
   [STORE_NAME]: Forms;
 }
@@ -115,7 +121,8 @@ export const createFormsStore = <S extends IFormState>(
   Consumer: ReturnType<typeof createContext>["Consumer"]
 ) => {
   const store: Store<S, Forms> = state.getStore(STORE_NAME as any) as any,
-    validators: IValidators = {};
+    validators: IValidators = {},
+    changesets: IChangesets = {};
 
   store.fromJSON = (json: any) => {
     json = json || {};
@@ -136,54 +143,69 @@ export const createFormsStore = <S extends IFormState>(
     }, Map<string, Record<IForm<any>>>());
   };
 
+  const validateForm = <T extends {}>(
+    form: Record<IForm<T>>,
+    changeset: Changeset<T>,
+    changesetFn: IChangesetFn<T>
+  ) => {
+    const changes: T = form
+      .get("fields", Map<string, Record<IField<T[keyof T]>>>())
+      .map(field => field.get("value", ""))
+      .toJS() as any;
+
+    changeset = changesetFn(changeset.addChanges(changes).clearErrors());
+
+    let valid = true;
+    const fields = form
+      .get("fields", Map<keyof T, Record<IField<T[keyof T]>>>())
+      .map((field, key) => {
+        const errors = changeset.getError(key);
+
+        if (!errors.isEmpty()) {
+          valid = false;
+        }
+        if (field.get("visited")) {
+          return field.set("errors", errors);
+        } else {
+          return field;
+        }
+      });
+
+    if (valid && fields.isEmpty()) {
+      valid = false;
+    }
+
+    return form.set("valid", valid).set("fields", fields);
+  };
+
   const create = <T extends {}>(
     componentRef: React.RefObject<React.ComponentType<any>>,
-    changesetFn: (changeset: Changeset<T>) => Changeset<T>,
+    changesetFn: IChangesetFn<T>,
     timeout: number,
     defaults: Partial<T>,
     formName?: string
   ): string => {
-    const formId = formName + v4();
+    const formId = formName + v4(),
+      changeset = new Changeset<T>(defaults);
 
-    resetForm<T>(formId, defaults);
+    changesets[formId] = changeset;
 
-    let changeset = new Changeset<T>(defaults);
+    resetForm<T>(formId, defaults, changeset, changesetFn);
 
     const validator = () => {
-      const changes: T = store
-        .getState()
-        .get(formId, Form())
-        .get("fields", Map<string, Record<IField<T[keyof T]>>>())
-        .map(field => field.get("value", ""))
-        .toJS() as any;
-
-      changeset = changesetFn(changeset.addChanges(changes).clearErrors());
-
-      let valid = true;
-      store.updateState(state => {
-        const form: Record<IForm<T>> = state.get(formId, Form()),
-          fields = form
-            .get("fields", Map<keyof T, Record<IField<T[keyof T]>>>())
-            .map((field, key) => {
-              const errors = changeset.getError(key);
-
-              if (errors.size !== 0) {
-                valid = false;
-              }
-              if (field.get("visited")) {
-                return field.set("errors", errors);
-              } else {
-                return field;
-              }
-            });
-
-        return state.set(
+      store.updateState(state =>
+        state.set(
           formId,
-          form.set("valid", valid).set("fields", fields)
-        );
-      });
+          validateForm(state.get(formId, Form()), changeset, changesetFn)
+        )
+      );
 
-      const component = componentRef.current as any;
+      const component = componentRef.current as any,
+        valid = store
+          .getState()
+          .get(formId, Form())
+          .get("valid");
+
       if (component) {
         if (component.onFormChange) {
           component.onFormChange();
@@ -201,10 +223,16 @@ export const createFormsStore = <S extends IFormState>(
 
   const remove = (formId: string) => {
     store.updateState(state => state.remove(formId));
+    delete changesets[formId];
     delete validators[formId];
   };
 
-  const resetForm = <T extends {}>(formId: string, defaults: Partial<T>) => {
+  const resetForm = <T extends {}>(
+    formId: string,
+    defaults: Partial<T>,
+    changeset: Changeset<T>,
+    changesetFn: IChangesetFn<T>
+  ) => {
     const fields = Object.keys(defaults || {}).reduce(
       (form, key) =>
         form.set(
@@ -216,7 +244,9 @@ export const createFormsStore = <S extends IFormState>(
       Map<keyof T, Record<IField<T[keyof T]>>>()
     );
 
-    store.updateState(state => state.set(formId, Form({ fields })));
+    store.updateState(state =>
+      state.set(formId, validateForm(Form({ fields }), changeset, changesetFn))
+    );
   };
 
   const selectForm = <T extends {}>(
@@ -415,7 +445,12 @@ export const createFormsStore = <S extends IFormState>(
         setErrors = (errors: Map<keyof T, List<Record<IChangesetError>>>) =>
           setErrors(this._formId, errors);
         resetForm = () =>
-          resetForm(this._formId, (this.props as any).defaults || {});
+          resetForm(
+            this._formId,
+            (this.props as any).defaults || {},
+            changesets[this._formId],
+            changesetFn
+          );
         getFormData = () =>
           selectForm(store.state.getState(), this._formId)
             .get("fields", Map())

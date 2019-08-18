@@ -12,7 +12,7 @@ import {
   IInjectedFormProps,
   IInputProps,
   INITIAL_STATE as forms
-} from "../lib";
+} from ".";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>");
 
@@ -163,15 +163,19 @@ const ConnectedForm = injectForm<IFormValues>({
   changeset: changeset => changeset.validateRequired(["name", "gender"])
 })(Form);
 
+interface IRootProps {
+  defaults: Partial<IFormValues>;
+}
+
 interface IRootState {
   value: typeof state.current;
 }
 
-class Root extends React.Component<{}, IRootState> {
+class Root extends React.Component<IRootProps, IRootState> {
   formRef: React.RefObject<any>;
   isUpdating: boolean = false;
 
-  constructor(props: {}) {
+  constructor(props: IRootProps) {
     super(props);
 
     this.formRef = React.createRef();
@@ -188,18 +192,23 @@ class Root extends React.Component<{}, IRootState> {
   render() {
     return (
       <Provider value={this.state.value}>
-        <ConnectedForm
-          ref={this.formRef}
-          defaults={{ name: "default", gender: GENDERS[0] }}
-        />
+        <ConnectedForm ref={this.formRef} defaults={this.props.defaults} />
       </Provider>
     );
   }
 }
 
 tape("connect update", (assert: tape.Test) => {
-  const wrapper = Enzyme.mount(React.createElement(Root)),
+  const wrapper = Enzyme.mount(
+      <Root defaults={{ name: "default", gender: GENDERS[0] }} />
+    ),
     formId = (wrapper.instance() as Root).formRef.current.getFormId();
+
+  assert.equals(
+    selectForm(state.getState(), formId).get("valid"),
+    true,
+    "form should be valid"
+  );
 
   assert.equals(
     ((wrapper.instance() as Root).formRef.current.constructor as any)
@@ -271,6 +280,24 @@ tape("connect update", (assert: tape.Test) => {
       .toJS(),
     [{ message: "invalid_gender", values: [] }],
     "store's should have errors from setErrors"
+  );
+
+  assert.end();
+});
+
+tape("without defaults connect update", (assert: tape.Test) => {
+  const wrapper = Enzyme.mount(<Root defaults={{}} />),
+    formId = (wrapper.instance() as Root).formRef.current.getFormId();
+
+  assert.equals(
+    selectForm(state.getState(), formId).get("valid"),
+    false,
+    "form should be invalid"
+  );
+  assert.equals(
+    selectField(state.getState(), formId, "name").get("value"),
+    "",
+    'store\'s name not set to ""'
   );
 
   assert.end();

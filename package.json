@@ -1,6 +1,6 @@
 {
   "name": "@stembord/state-forms",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "description": "use forms with @stembord/state and @stembord/state-react",
   "repository": {
     "type": "git",
@@ -12,12 +12,13 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run clean && npm run build",
-    "test": "ts-node ./node_modules/tape/bin/tape ./tests/**/*.test.{ts,tsx} | tap-spec",
+    "test": "ts-node node_modules/.bin/tape lib/**/*.test.{ts,tsx} | tap-spec",
+    "coverage": "nyc --reporter=lcov --require ts-node/register tape lib/**/*.test.{ts,tsx} | tap-spec; nyc report ---reporter=text",
     "clean": "rm -rf ./src",
-    "format.ts": "prettier-tslint fix '**/*.{ts,tsx}'",
-    "format.js": "prettier --write '**/*.{js,jsx,json}' --ignore-path .gitignore",
-    "format": "npm run format.ts && npm run format.js",
-    "lint": "tslint -c tslint.json 'lib/**/*.{ts,tsx}'"
+    "formatTS": "prettier-tslint fix '**/*.{ts,tsx}'",
+    "formatJS": "prettier --write '**/*.{js,jsx,json}' --ignore-path .gitignore",
+    "format": "npm run formatTS && npm run formatJS",
+    "lint": "tslint -c tslint.json 'lib/**/*.{ts,tsx}' -e 'lib/**/*.test.*'"
   },
   "keywords": [
     "state",
@@ -29,38 +30,52 @@
   "readmeFilename": "README.md",
   "devDependencies": {
     "@stembord/changeset": "^0.1.5",
-    "@stembord/state": "^0.2.5",
-    "@stembord/state-react": "^0.2.10",
-    "@types/enzyme": "^3.9.0",
+    "@stembord/state": "^0.2.6",
+    "@stembord/state-react": "^0.2.11",
+    "@types/enzyme": "^3.9.3",
     "@types/enzyme-adapter-react-16": "^1.0.5",
-    "@types/jsdom": "^12.2.2",
-    "@types/react": "^16.8.4",
+    "@types/jsdom": "^12.2.3",
+    "@types/react": "^16.8.19",
     "@types/tape": "^4.2.33",
     "@types/uuid": "^3.4.4",
-    "enzyme": "^3.9.0",
-    "enzyme-adapter-react-16": "^1.9.1",
-    "immutable": ">= 4.0.0-rc.12",
-    "jsdom": "^13.2.0",
-    "prettier": "^1.16.4",
+    "nyc": "^14.1.1",
+    "enzyme": "^3.10.0",
+    "enzyme-adapter-react-16": "^1.14.0",
+    "immutable": "^4.0.0-rc.12",
+    "jsdom": "^15.1.1",
+    "prettier": "^1.18.2",
     "prettier-tslint": "^0.4.2",
-    "react": "^16.8.3",
-    "react-dom": "^16.8.3",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
     "tap-spec": "^5.0.0",
-    "tape": "^4.10.1",
-    "ts-node": "^8.0.2",
-    "tslint": "^5.13.0",
+    "tape": "^4.10.2",
+    "ts-node": "^8.2.0",
+    "tap-nyc": "^1.0.3",
+    "tslint": "^5.17.0",
     "tslint-config-prettier": "^1.18.0",
-    "typescript": "^3.4.4"
+    "typescript": "^3.5.1"
   },
   "dependencies": {
     "@stembord/debounce": "^0.1.3",
     "uuid": "^3.3.2"
   },
   "peerDependencies": {
-    "immutable": ">= 4.0.0-rc.12",
+    "immutable": "^4.0.0-rc.12",
     "@stembord/changeset": "^0.1.5",
-    "@stembord/state": "^0.2.5",
-    "@stembord/state-react": "^0.2.10",
-    "react": ">= 16.8.6"
+    "@stembord/state": "^0.2.6",
+    "@stembord/state-react": "^0.2.11",
+    "react": "^16.8.6"
+  },
+  "nyc": {
+    "include": [
+      "lib/**/*"
+    ],
+    "exclude": [
+      "**/*.test.*"
+    ],
+    "extension": [
+      ".ts",
+      ".tsx"
+    ]
   }
 }
