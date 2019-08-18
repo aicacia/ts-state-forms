@@ -297,7 +297,7 @@ export const createFormsStore = <S extends IFormState>(
     formId: string,
     name: keyof T,
     update: (field: Record<IField<T[keyof T]>>) => Record<IField<T[keyof T]>>
-  ) =>
+  ) => {
     store.updateState(state => {
       const form: Record<IForm<T>> = state.get(formId, Form()),
         fields = form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>()),
@@ -308,6 +308,7 @@ export const createFormsStore = <S extends IFormState>(
         form.set("fields", fields.set(name, update(field)))
       );
     });
+  };
 
   const unsafeChangeField = <T extends {}>(
     formId: string,
@@ -327,7 +328,7 @@ export const createFormsStore = <S extends IFormState>(
     validators[formId]();
   };
 
-  const removeField = <T extends {}>(formId: string, name: keyof T) =>
+  const removeField = <T extends {}>(formId: string, name: keyof T) => {
     store.updateState(state => {
       const form: Record<IForm<T>> = state.get(formId, Form()),
         fields = form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>());
@@ -338,40 +339,38 @@ export const createFormsStore = <S extends IFormState>(
         return state;
       }
     });
+  };
 
-  const createFieldComponent = <T extends {}>(formId: string) => {
-    return class FieldComponent<
+  const createFieldComponent = <T extends {}>(formId: string) =>
+    class FieldComponent<
       P extends IInputProps<T[keyof T]>
     > extends React.PureComponent<IFieldProps<P, T>> {
       static defaultProps = defaultPropsField;
 
-      change = (value: T[keyof T]) => {
+      change = (value: T[keyof T]) =>
         changeField(formId, this.props.name, value);
-      };
-      unsafeChange = (value: T[keyof T]) => {
+      unsafeChange = (value: T[keyof T]) =>
         unsafeChangeField(formId, this.props.name, value);
-      };
       onChange = (
         e: React.ChangeEvent<
           HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
-      ) => {
+      ) =>
         changeField<T>(
           formId,
           this.props.name,
           (this.props.getValue as IGetValueFn<T[keyof T]>)(e)
         );
-      };
       onBlur = () => {
         updateField<T>(formId, this.props.name, field =>
           field.set("focus", false)
         );
+        validators[formId]();
       };
-      onFocus = () => {
+      onFocus = () =>
         updateField<T>(formId, this.props.name, field =>
           field.set("visited", true).set("focus", true)
         );
-      };
       consumerRender = (state: Record<S>) => {
         const { name, Component, getValue, ...props } = this.props,
           field = selectField<T>(state, formId, name),
@@ -400,7 +399,6 @@ export const createFormsStore = <S extends IFormState>(
         return React.createElement(Consumer, null, this.consumerRender);
       }
     };
-  };
 
   const injectForm = <T extends {}>(options: IOptions<T>) => {
     const formName = options.name || "",
