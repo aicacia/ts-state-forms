@@ -126,12 +126,6 @@ const GENDERS: IGender[] = [
   getGenderDisplayValue = ({ value }: IGender) => value;
 
 class Form extends React.PureComponent<IFormProps> {
-  onFormChange = () => {
-    console.log("any change");
-  };
-  onFormChangeValid = () => {
-    console.log("valid change");
-  };
   render() {
     const { Field } = this.props;
 
@@ -165,6 +159,8 @@ const ConnectedForm = injectForm<IFormValues>({
 
 interface IRootProps {
   defaults: Partial<IFormValues>;
+  onFormChange?(props: IInjectedFormProps<IFormValues>): void;
+  onFormChangeValid?(props: IInjectedFormProps<IFormValues>): void;
 }
 
 interface IRootState {
@@ -188,19 +184,36 @@ class Root extends React.Component<IRootProps, IRootState> {
       this.setState({ value: state.getState() });
     });
   }
-
   render() {
     return (
       <Provider value={this.state.value}>
-        <ConnectedForm ref={this.formRef} defaults={this.props.defaults} />
+        <ConnectedForm
+          ref={this.formRef}
+          onFormChange={this.props.onFormChange}
+          onFormChangeValid={this.props.onFormChangeValid}
+          defaults={this.props.defaults}
+        />
       </Provider>
     );
   }
 }
 
 tape("connect update", (assert: tape.Test) => {
-  const wrapper = Enzyme.mount(
-      <Root defaults={{ name: "default", gender: GENDERS[0] }} />
+  let onFormChangeCalled = 0,
+    onFormChangeValidCalled = 0;
+
+  const onFormChange = () => {
+      onFormChangeCalled++;
+    },
+    onFormChangeValid = () => {
+      onFormChangeValidCalled++;
+    },
+    wrapper = Enzyme.mount(
+      <Root
+        onFormChange={onFormChange}
+        onFormChangeValid={onFormChangeValid}
+        defaults={{ name: "default", gender: GENDERS[0] }}
+      />
     ),
     formId = (wrapper.instance() as Root).formRef.current.getFormId();
 
@@ -281,6 +294,9 @@ tape("connect update", (assert: tape.Test) => {
     [{ message: "invalid_gender", values: [] }],
     "store's should have errors from setErrors"
   );
+
+  assert.equals(onFormChangeCalled, 4);
+  assert.equals(onFormChangeValidCalled, 3);
 
   assert.end();
 });

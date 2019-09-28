@@ -76,6 +76,8 @@ class FieldComponent<P extends IInputProps<any>> extends React.PureComponent<
 
 export interface IExposedFormProps<T extends {}> {
   defaults?: Partial<T>;
+  onFormChange?(props: IInjectedFormProps<T>): void;
+  onFormChangeValid?(props: IInjectedFormProps<T>): void;
 }
 
 export interface IInjectedFormProps<T extends {}> extends IExposedFormProps<T> {
@@ -200,18 +202,17 @@ export const createFormsStore = <S extends IFormState>(
         )
       );
 
-      const component = componentRef.current as any,
-        valid = store
-          .getState()
-          .get(formId, Form())
-          .get("valid");
+      const component: React.ReactElement<
+          IInjectedFormProps<T>
+        > = componentRef.current as any,
+        valid = store.getState().get(formId, Form()).get("valid");
 
-      if (component) {
-        if (component.onFormChange) {
-          component.onFormChange();
+      if (component && component.props) {
+        if (component.props.onFormChange) {
+          component.props.onFormChange(component.props);
         }
-        if (valid && component.onFormChangeValid) {
-          component.onFormChangeValid();
+        if (valid && component.props.onFormChangeValid) {
+          component.props.onFormChangeValid(component.props);
         }
       }
     };
