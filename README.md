@@ -62,12 +62,6 @@ const CustomInput = ({
 interface IFormProps extends IInjectedFormProps {}
 
 class Form extends React.PureComponent<IFormProps> {
-    onFormChange = () => {
-        console.log("any change");
-    };
-    onFormChangeValid = () => {
-        console.log("valid change");
-    };
     onSubmit = (e: React.FormEvent) => {
         const { resetForm, getForm, setErrors } = this.props,
             values = getForm();
