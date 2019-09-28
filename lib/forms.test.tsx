@@ -159,8 +159,8 @@ const ConnectedForm = injectForm<IFormValues>({
 
 interface IRootProps {
   defaults: Partial<IFormValues>;
-  onFormChange?(props: IInjectedFormProps<IFormValues>): void;
-  onFormChangeValid?(props: IInjectedFormProps<IFormValues>): void;
+  onFormChange?(props: IFormProps): void;
+  onFormChangeValid?(props: IFormProps): void;
 }
 
 interface IRootState {

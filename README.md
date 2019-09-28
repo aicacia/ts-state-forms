@@ -107,7 +107,17 @@ class Form extends React.PureComponent<IFormProps> {
 
 const ConnectedForm = injectForm({
     changeset: changeset => changeset
-        .validateLength("age", { ">=": 13 })
+        .validateLength("age", { ">=": 18 })
         .validateRequired(["name", "age"])
 })(Form);
+
+React.render(<ConnectedForm
+    onFormChange={(props: IFormProps) => {
+        console.log("any change", props);
+    }}
+    onFormChangeValid={(props: IFormProps) => {
+        console.log("valid change");
+    }}
+    defaults={{ age: 18 }}
+/>, document.getElementById("app"));
 ```
