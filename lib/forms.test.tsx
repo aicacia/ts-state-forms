@@ -23,10 +23,13 @@ const INITIAL_STATE = { forms };
 
 const state = new State(INITIAL_STATE),
   { Consumer, Provider } = createContext(state.getState()),
-  { selectField, selectForm, injectForm, setErrors } = createFormsStore(
-    state,
-    Consumer
-  );
+  {
+    selectField,
+    selectForm,
+    selectFormExists,
+    injectForm,
+    setErrors
+  } = createFormsStore(state, Consumer);
 
 Enzyme.configure({ adapter: new EnzymeAdapter() });
 
@@ -164,7 +167,7 @@ interface IRootProps {
 }
 
 interface IRootState {
-  value: typeof state.current;
+  value: ReturnType<typeof state.getState>;
 }
 
 class Root extends React.Component<IRootProps, IRootState> {
@@ -298,6 +301,9 @@ tape("connect update", (assert: tape.Test) => {
   assert.equals(onFormChangeCalled, 4);
   assert.equals(onFormChangeValidCalled, 3);
 
+  wrapper.unmount();
+
+  assert.false(selectFormExists(state.getState(), formId));
   assert.end();
 });
 
@@ -316,5 +322,8 @@ tape("without defaults connect update", (assert: tape.Test) => {
     'store\'s name not set to ""'
   );
 
+  wrapper.unmount();
+
+  assert.false(selectFormExists(state.getState(), formId));
   assert.end();
 });

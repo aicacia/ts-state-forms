@@ -1,5 +1,6 @@
 import { Changeset, IChangesetError } from "@stembord/changeset";
 import { debounce } from "@stembord/debounce";
+import { IJSON, IJSONObject, isJSONObject } from "@stembord/json";
 import { State, Store } from "@stembord/state";
 import { createContext } from "@stembord/state-react";
 import { List, Map, Record } from "immutable";
@@ -70,9 +71,12 @@ export type IFieldProps<P extends IInputProps<T[keyof T]>, T extends {}> = Pick<
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
-class FieldComponent<P extends IInputProps<any>> extends React.PureComponent<
-  IFieldProps<P, any>
-> {}
+class FieldComponent<
+  P extends IInputProps<T[keyof T]>,
+  T extends {}
+> extends React.PureComponent<IFieldProps<P, T>> {}
+
+const DEFAULT_TIMEOUT = 1000;
 
 export interface IExposedFormProps<T extends {}> {
   defaults?: Partial<T>;
@@ -126,18 +130,18 @@ export const createFormsStore = <S extends IFormState>(
     validators: IValidators = {},
     changesets: IChangesets = {};
 
-  store.fromJSON = (json: any) => {
-    json = json || {};
+  store.fromJSON = (json: IJSON) => {
+    const formsJSON: IJSONObject = (json || {}) as any;
 
-    return Object.keys(json).reduce((forms, key) => {
-      const jsonForm = json[key] || {};
+    return Object.keys(formsJSON).reduce((forms, key) => {
+      const jsonForm: IJSONObject = (formsJSON[key] || {}) as any;
 
       return forms.set(
         key,
         Form({
           valid: !!jsonForm.valid,
           fields: Object.keys(jsonForm.fields || []).reduce((fields, key) => {
-            const jsonField = jsonForm[key];
+            const jsonField: IJSONObject = (jsonForm[key] || {}) as any;
             return fields.set(key, Field(jsonField));
           }, Map<string, Record<IField<any>>>())
         })
@@ -202,10 +206,13 @@ export const createFormsStore = <S extends IFormState>(
         )
       );
 
-      const component: React.ReactElement<
-          IInjectedFormProps<T>
-        > = componentRef.current as any,
-        valid = store.getState().get(formId, Form()).get("valid");
+      const component: React.ReactElement<IInjectedFormProps<
+          T
+        >> = componentRef.current as any,
+        valid = store
+          .getState()
+          .get(formId, Form())
+          .get("valid");
 
       if (component && component.props) {
         if (component.props.onFormChange) {
@@ -334,7 +341,7 @@ export const createFormsStore = <S extends IFormState>(
       const form: Record<IForm<T>> = state.get(formId, Form()),
         fields = form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>());
 
-      if (form) {
+      if (form && fields.has(name)) {
         return state.set(formId, form.set("fields", fields.remove(name)));
       } else {
         return state;
@@ -396,6 +403,9 @@ export const createFormsStore = <S extends IFormState>(
           removeField(formId, prev.name);
         }
       }
+      componentWillUnmount() {
+        removeField<T>(formId, this.props.name);
+      }
       render() {
         return React.createElement(Consumer, null, this.consumerRender);
       }
@@ -403,7 +413,7 @@ export const createFormsStore = <S extends IFormState>(
 
   const injectForm = <T extends {}>(options: IOptions<T>) => {
     const formName = options.name || "",
-      timeout = isNumber(options.timeout) ? options.timeout : 300,
+      timeout = isNumber(options.timeout) ? options.timeout : DEFAULT_TIMEOUT,
       changesetFn = options.changeset;
 
     return <P extends IInjectedFormProps<T>>(
