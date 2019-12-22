@@ -1,6 +1,6 @@
 import { Changeset, IChangesetError } from "@stembord/changeset";
 import { debounce } from "@stembord/debounce";
-import { IJSON, IJSONObject, isJSONObject } from "@stembord/json";
+import { IJSON, IJSONObject } from "@stembord/json";
 import { State, Store } from "@stembord/state";
 import { createContext } from "@stembord/state-react";
 import { List, Map, Record } from "immutable";
@@ -28,11 +28,13 @@ export const Field = Record<IField<any>>({
 export interface IForm<T extends {}> {
   valid: boolean;
   fields: Map<keyof T, Record<IField<T[keyof T]>>>;
+  errors: List<Record<IChangesetError>>;
 }
 
 export const Form = Record<IForm<any>>({
   valid: true,
-  fields: Map()
+  fields: Map(),
+  errors: List()
 });
 
 export type Forms = Map<string, Record<IForm<any>>>;
@@ -89,8 +91,10 @@ export interface IInjectedFormProps<T extends {}> extends IExposedFormProps<T> {
   Field: typeof FieldComponent;
   change(name: keyof T, value: T[keyof T]): void;
   unsafeChange(name: keyof T, value: T[keyof T]): void;
-  setErrors(
-    errors: Map<keyof T, List<Record<IChangesetError>>>
+  addError(error: Record<IChangesetError>): Record<IForm<T>>;
+  addFieldError(
+    field: keyof T,
+    error: Record<IChangesetError>
   ): Record<IForm<T>>;
   resetForm(): void;
   getFormData(): Map<keyof T, T[keyof T]>;
@@ -106,7 +110,10 @@ export interface IValidators {
   [formId: string]: () => void;
 }
 
-type IChangesetFn<T> = (changeset: Changeset<T>) => Changeset<T>;
+type IChangesetFn<T> = (
+  changeset: Changeset<T>,
+  component: React.ReactElement<IInjectedFormProps<T>>
+) => Changeset<T>;
 
 export interface IChangesets {
   [formId: string]: Changeset<any>;
@@ -151,6 +158,7 @@ export const createFormsStore = <S extends IFormState>(
 
   const validateForm = <T extends {}>(
     form: Record<IForm<T>>,
+    component: React.ReactElement<IInjectedFormProps<T>>,
     changeset: Changeset<T>,
     changesetFn: IChangesetFn<T>
   ) => {
@@ -159,7 +167,10 @@ export const createFormsStore = <S extends IFormState>(
       .map(field => field.get("value", ""))
       .toJS() as any;
 
-    changeset = changesetFn(changeset.addChanges(changes).clearErrors());
+    changeset = changesetFn(
+      changeset.addChanges(changes).clearErrors(),
+      component
+    );
 
     let valid = true;
     const fields = form
@@ -192,34 +203,45 @@ export const createFormsStore = <S extends IFormState>(
     formName?: string
   ): string => {
     const formId = formName + v4(),
-      changeset = new Changeset<T>(defaults);
+      changeset = new Changeset<T>(defaults),
+      component: React.ReactElement<IInjectedFormProps<
+        T
+      >> = componentRef.current as any;
 
     changesets[formId] = changeset;
 
-    resetForm<T>(formId, defaults, changeset, changesetFn);
+    resetForm<T>(formId, defaults, component, changeset, changesetFn);
 
     const validator = () => {
-      store.updateState(state =>
-        state.set(
-          formId,
-          validateForm(state.get(formId, Form()), changeset, changesetFn)
-        )
-      );
-
       const component: React.ReactElement<IInjectedFormProps<
-          T
-        >> = componentRef.current as any,
-        valid = store
+        T
+      >> = componentRef.current as any;
+
+      if (component) {
+        store.updateState(state =>
+          state.set(
+            formId,
+            validateForm(
+              state.get(formId, Form()),
+              component,
+              changeset,
+              changesetFn
+            )
+          )
+        );
+
+        const valid = store
           .getState()
           .get(formId, Form())
           .get("valid");
 
-      if (component && component.props) {
-        if (component.props.onFormChange) {
-          component.props.onFormChange(component.props);
-        }
-        if (valid && component.props.onFormChangeValid) {
-          component.props.onFormChangeValid(component.props);
+        if (component.props) {
+          if (component.props.onFormChange) {
+            component.props.onFormChange(component.props);
+          }
+          if (valid && component.props.onFormChangeValid) {
+            component.props.onFormChangeValid(component.props);
+          }
         }
       }
     };
@@ -238,6 +260,7 @@ export const createFormsStore = <S extends IFormState>(
   const resetForm = <T extends {}>(
     formId: string,
     defaults: Partial<T>,
+    component: React.ReactElement<IInjectedFormProps<T>>,
     changeset: Changeset<T>,
     changesetFn: IChangesetFn<T>
   ) => {
@@ -253,7 +276,10 @@ export const createFormsStore = <S extends IFormState>(
     );
 
     store.updateState(state =>
-      state.set(formId, validateForm(Form({ fields }), changeset, changesetFn))
+      state.set(
+        formId,
+        validateForm(Form({ fields }), component, changeset, changesetFn)
+      )
     );
   };
 
@@ -282,23 +308,42 @@ export const createFormsStore = <S extends IFormState>(
       state.set(formId, update(state.get(formId, Form())))
     );
 
-  const setErrors = <T extends {}>(
+  const selectErrors = (state: Record<S>, formId: string) =>
+    selectForm(state, formId).get("errors");
+
+  const selectFieldErrors = <T extends {}>(
+    state: Record<S>,
     formId: string,
-    errors: Map<keyof T, List<Record<IChangesetError>>>
+    field: keyof T
+  ) => selectField(state, formId, field).get("errors");
+
+  const addError = <T extends {}>(
+    formId: string,
+    error: Record<IChangesetError>
   ) =>
     store.updateState(state => {
-      const form: Record<IForm<T>> = state.get(formId, Form()),
-        fields = errors.entrySeq().reduce((fields, [key, errorArray]) => {
-          const field = fields.get(key);
+      const form: Record<IForm<T>> = state.get(formId, Form());
+      return state.set(
+        formId,
+        form.update("errors", errors => errors.push(error))
+      );
+    });
 
-          if (errorArray && field) {
-            fields = fields.set(key as any, field.set("errors", errorArray));
-          }
-
-          return fields;
-        }, form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>()));
-
-      return state.set(formId, form.set("fields", fields));
+  const addFieldError = <T extends {}>(
+    formId: string,
+    field: keyof T,
+    error: Record<IChangesetError>
+  ) =>
+    store.updateState(state => {
+      const form: Record<IForm<T>> = state.get(formId, Form());
+      return state.set(
+        formId,
+        form.update("fields", fields =>
+          fields.update(field, field =>
+            field.update("errors", errors => errors.push(error))
+          )
+        )
+      );
     });
 
   const updateField = <T extends {}>(
@@ -451,12 +496,15 @@ export const createFormsStore = <S extends IFormState>(
           changeField(this._formId, name, value);
         unsafeChange = (name: keyof T, value: T[keyof T]) =>
           unsafeChangeField(this._formId, name, value);
-        setErrors = (errors: Map<keyof T, List<Record<IChangesetError>>>) =>
-          setErrors(this._formId, errors);
+        addError = (error: Record<IChangesetError>) =>
+          addError(this._formId, error);
+        addFieldError = (field: keyof T, error: Record<IChangesetError>) =>
+          addFieldError(this._formId, field, error);
         resetForm = () =>
           resetForm(
             this._formId,
             (this.props as any).defaults || {},
+            this as any,
             changesets[this._formId],
             changesetFn
           );
@@ -474,7 +522,8 @@ export const createFormsStore = <S extends IFormState>(
               Field: this._Field,
               change: this.change,
               unsafeChange: this.unsafeChange,
-              setErrors: this.setErrors,
+              addError: this.addError,
+              addFieldError: this.addFieldError,
               resetForm: this.resetForm,
               getFormData: this.getFormData
             })
@@ -497,7 +546,10 @@ export const createFormsStore = <S extends IFormState>(
     selectFormExists,
     selectField,
     updateForm,
-    setErrors,
+    selectErrors,
+    selectFieldErrors,
+    addError,
+    addFieldError,
     updateField,
     changeField,
     removeField,

@@ -1,9 +1,8 @@
-import { ChangesetError, IChangesetError } from "@stembord/changeset";
+import { ChangesetError } from "@stembord/changeset";
 import { State } from "@stembord/state";
 import { createContext } from "@stembord/state-react";
 import * as Enzyme from "enzyme";
 import * as EnzymeAdapter from "enzyme-adapter-react-16";
-import { List, Map, Record } from "immutable";
 import { JSDOM } from "jsdom";
 import * as React from "react";
 import * as tape from "tape";
@@ -28,7 +27,10 @@ const state = new State(INITIAL_STATE),
     selectForm,
     selectFormExists,
     injectForm,
-    setErrors
+    addError,
+    addFieldError,
+    selectErrors,
+    selectFieldErrors
   } = createFormsStore(state, Consumer);
 
 Enzyme.configure({ adapter: new EnzymeAdapter() });
@@ -283,19 +285,22 @@ tape("connect update", (assert: tape.Test) => {
     "store's should not be valid"
   );
 
-  setErrors(
+  addError(formId, ChangesetError({ message: "invalid", values: [] }));
+  assert.deepEquals(
+    selectErrors(state.getState(), formId).toJS(),
+    [{ message: "invalid", values: [] }],
+    "store's should have errors from addError"
+  );
+
+  addFieldError(
     formId,
-    Map<keyof IFormValues, List<Record<IChangesetError>>>().set(
-      "gender",
-      List([ChangesetError({ message: "invalid_gender", values: [] })])
-    )
+    "gender",
+    ChangesetError({ message: "invalid_gender", values: [] })
   );
   assert.deepEquals(
-    selectField(state.getState(), formId, "gender")
-      .get("errors")
-      .toJS(),
+    selectFieldErrors(state.getState(), formId, "gender").toJS(),
     [{ message: "invalid_gender", values: [] }],
-    "store's should have errors from setErrors"
+    "store's should have errors from addFieldError"
   );
 
   assert.equals(onFormChangeCalled, 4);

@@ -1,6 +1,6 @@
 {
   "name": "@stembord/state-forms",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "use forms with @stembord/state and @stembord/state-react",
   "repository": {
     "type": "git",
