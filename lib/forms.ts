@@ -97,6 +97,7 @@ export interface IInjectedFormProps<T extends {}> extends IExposedFormProps<T> {
     error: Record<IChangesetError>
   ): Record<IForm<T>>;
   resetForm(): void;
+  getState(): Forms;
   getFormData(): Map<keyof T, T[keyof T]>;
 }
 
@@ -508,6 +509,7 @@ export const createFormsStore = <S extends IFormState>(
             changesets[this._formId],
             changesetFn
           );
+        getState = () => store.state.getState()
         getFormData = () =>
           selectForm(store.state.getState(), this._formId)
             .get("fields", Map())
@@ -525,6 +527,7 @@ export const createFormsStore = <S extends IFormState>(
               addError: this.addError,
               addFieldError: this.addFieldError,
               resetForm: this.resetForm,
+              getState: this.getState,
               getFormData: this.getFormData
             })
           );
