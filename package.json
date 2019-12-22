@@ -1,6 +1,6 @@
 {
   "name": "@stembord/state-forms",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "use forms with @stembord/state and @stembord/state-react",
   "repository": {
     "type": "git",
@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@stembord/debounce": "^0.1.5",
+    "@stembord/json": "^0.1.1",
     "uuid": "^3.3.3"
   },
   "peerDependencies": {
