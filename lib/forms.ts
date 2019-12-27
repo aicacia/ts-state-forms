@@ -359,35 +359,44 @@ export const createFormsStore = <S extends IFormState>(
   const updateField = <T extends {}>(
     formId: string,
     name: keyof T,
-    update: (field: Record<IField<T[keyof T]>>) => Record<IField<T[keyof T]>>
+    update: (field: Record<IField<T[keyof T]>>) => Record<IField<T[keyof T]>>,
+    invalidate: boolean = true
   ) => {
     store.updateState(state => {
       const form: Record<IForm<T>> = state.get(formId, Form()),
         fields = form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>()),
         field: Record<IField<T[keyof T]>> = fields.get(name, Field());
 
-      return state.set(
-        formId,
-        form.set("fields", fields.set(name, update(field))).set("valid", false)
-      );
+      let updatedForm = form.set("fields", fields.set(name, update(field)));
+
+      if (invalidate) {
+        updatedForm = updatedForm.set("valid", false);
+      }
+
+      return state.set(formId, updatedForm);
     });
   };
 
   const unsafeChangeField = <T extends {}>(
     formId: string,
     name: keyof T,
-    value: T[keyof T]
+    value: T[keyof T],
+    invalidate: boolean = true
   ) =>
-    updateField(formId, name, field =>
-      field.set("visited", true).set("value", value)
+    updateField(
+      formId,
+      name,
+      field => field.set("visited", true).set("value", value),
+      invalidate
     );
 
   const changeField = <T extends {}>(
     formId: string,
     name: keyof T,
-    value: T[keyof T]
+    value: T[keyof T],
+    invalidate: boolean = true
   ) => {
-    unsafeChangeField(formId, name, value);
+    unsafeChangeField(formId, name, value, invalidate);
     validators[formId]();
   };
 
@@ -425,14 +434,20 @@ export const createFormsStore = <S extends IFormState>(
           (this.props.getValue as IGetValueFn<T[keyof T]>)(e)
         );
       onBlur = () => {
-        updateField<T>(formId, this.props.name, field =>
-          field.set("focus", false)
+        updateField<T>(
+          formId,
+          this.props.name,
+          field => field.set("focus", false),
+          false
         );
         validators[formId]();
       };
       onFocus = () =>
-        updateField<T>(formId, this.props.name, field =>
-          field.set("visited", true).set("focus", true)
+        updateField<T>(
+          formId,
+          this.props.name,
+          field => field.set("visited", true).set("focus", true),
+          false
         );
       consumerRender = (state: Record<S>) => {
         const { name, Component, getValue, ...props } = this.props,
