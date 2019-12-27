@@ -277,7 +277,7 @@ tape("connect update", (assert: tape.Test) => {
     selectField(state.getState(), formId, "name")
       .get("errors")
       .toJS(),
-    [{ message: "required", values: [] }],
+    [{ message: "required", values: [], meta: undefined }],
     "store's should have errors from changeset"
   );
   assert.false(
@@ -288,7 +288,7 @@ tape("connect update", (assert: tape.Test) => {
   addError(formId, ChangesetError({ message: "invalid", values: [] }));
   assert.deepEquals(
     selectErrors(state.getState(), formId).toJS(),
-    [{ message: "invalid", values: [] }],
+    [{ message: "invalid", values: [], meta: undefined }],
     "store's should have errors from addError"
   );
 
@@ -299,7 +299,7 @@ tape("connect update", (assert: tape.Test) => {
   );
   assert.deepEquals(
     selectFieldErrors(state.getState(), formId, "gender").toJS(),
-    [{ message: "invalid_gender", values: [] }],
+    [{ message: "invalid_gender", values: [], meta: undefined }],
     "store's should have errors from addFieldError"
   );
 

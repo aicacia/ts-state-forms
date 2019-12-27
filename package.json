@@ -1,6 +1,6 @@
 {
   "name": "@aicacia/state-forms",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "use forms with @aicacia/state and @aicacia/state-react",
   "repository": {
     "type": "git",
@@ -29,7 +29,7 @@
   "license": "(MIT OR Apache-2.0)",
   "readmeFilename": "README.md",
   "devDependencies": {
-    "@aicacia/changeset": "^0.1.2",
+    "@aicacia/changeset": "^0.1.3",
     "@aicacia/state": "^0.1.1",
     "@aicacia/state-react": "^0.1.1",
     "@types/enzyme": "^3.10.3",
