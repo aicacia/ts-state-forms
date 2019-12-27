@@ -5,7 +5,7 @@ import { State, Store } from "@aicacia/state";
 import { createContext } from "@aicacia/state-react";
 import { List, Map, Record } from "immutable";
 import * as React from "react";
-import { isNumber } from "util";
+import { isFunction, isNumber } from "util";
 import { v4 } from "uuid";
 
 export const INITIAL_STATE = Map<string, Record<IForm<any>>>();
@@ -78,7 +78,7 @@ class FieldComponent<
   T extends {}
 > extends React.PureComponent<IFieldProps<P, T>> {}
 
-const DEFAULT_TIMEOUT = 1000;
+const DEFAULT_TIMEOUT = 250;
 
 export interface IExposedFormProps<T extends {}> {
   defaults?: Partial<T>;
@@ -97,8 +97,9 @@ export interface IInjectedFormProps<T extends {}> extends IExposedFormProps<T> {
     error: Record<IChangesetError>
   ): Record<IForm<T>>;
   resetForm(): void;
-  getState(): Forms;
+  getChangeset(): Changeset<T>;
   getFormId(): string;
+  getForm(): Record<IForm<T>>;
   getFormData(): Map<keyof T, T[keyof T]>;
 }
 
@@ -166,7 +167,8 @@ export const createFormsStore = <S extends IFormState>(
   ) => {
     const changes: T = form
       .get("fields", Map<string, Record<IField<T[keyof T]>>>())
-      .map(field => field.get("value", ""))
+      .filter(field => !field.get("value", ""))
+      .map(field => field.get("value"))
       .toJS() as any;
 
     changeset = changesetFn(
@@ -178,7 +180,7 @@ export const createFormsStore = <S extends IFormState>(
     const fields = form
       .get("fields", Map<keyof T, Record<IField<T[keyof T]>>>())
       .map((field, key) => {
-        const errors = changeset.getError(key);
+        const errors = changeset.getErrorList(key);
 
         if (!errors.isEmpty()) {
           valid = false;
@@ -232,16 +234,22 @@ export const createFormsStore = <S extends IFormState>(
           )
         );
 
-        const valid = store
-          .getState()
-          .get(formId, Form())
-          .get("valid");
+        const valid = selectForm<T>(store.state.getState(), formId).get(
+          "valid"
+        );
 
         if (component.props) {
-          if (component.props.onFormChange) {
+          if (
+            component.props.onFormChange &&
+            isFunction(component.props.onFormChange)
+          ) {
             component.props.onFormChange(component.props);
           }
-          if (valid && component.props.onFormChangeValid) {
+          if (
+            valid &&
+            component.props.onFormChangeValid &&
+            isFunction(component.props.onFormChangeValid)
+          ) {
             component.props.onFormChangeValid(component.props);
           }
         }
@@ -360,7 +368,7 @@ export const createFormsStore = <S extends IFormState>(
 
       return state.set(
         formId,
-        form.set("fields", fields.set(name, update(field)))
+        form.set("fields", fields.set(name, update(field))).set("valid", false)
       );
     });
   };
@@ -511,6 +519,8 @@ export const createFormsStore = <S extends IFormState>(
             changesetFn
           );
         getState = () => store.state.getState();
+        getChangeset = () => changesets[this._formId];
+        getForm = () => selectForm(store.state.getState(), this._formId);
         getFormData = () =>
           selectForm(store.state.getState(), this._formId)
             .get("fields", Map())
@@ -528,8 +538,9 @@ export const createFormsStore = <S extends IFormState>(
               addError: this.addError,
               addFieldError: this.addFieldError,
               resetForm: this.resetForm,
+              getChangeset: this.getChangeset,
               getFormId: this.getFormId,
-              getState: this.getState,
+              getForm: this.getForm,
               getFormData: this.getFormData
             })
           );
