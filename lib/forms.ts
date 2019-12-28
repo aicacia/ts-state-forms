@@ -165,14 +165,14 @@ export const createFormsStore = <S extends IFormState>(
     changeset: Changeset<T>,
     changesetFn: IChangesetFn<T>
   ) => {
-    const changes: T = form
+    const values: T = form
       .get("fields", Map<string, Record<IField<T[keyof T]>>>())
-      .filter(field => !field.get("value", ""))
+      .filter(field => field.has("value"))
       .map(field => field.get("value"))
       .toJS() as any;
 
     changeset = changesetFn(
-      changeset.addChanges(changes).clearErrors(),
+      changeset.addChanges(values).clearErrors(),
       component
     );
 
