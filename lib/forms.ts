@@ -69,6 +69,15 @@ export type IFieldProps<P extends IInputProps<T[keyof T]>, T extends {}> = Pick<
   name: keyof T;
   Component: React.ComponentType<P> | "input" | "select" | "textarea";
   getValue?: IGetValueFn<T[keyof T]>;
+  onChange?: React.ChangeEventHandler<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  >;
+  onBlur?: React.FocusEventHandler<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  >;
+  onFocus?: React.FocusEventHandler<
+    HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  >;
 };
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
@@ -427,13 +436,19 @@ export const createFormsStore = <S extends IFormState>(
         e: React.ChangeEvent<
           HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
-      ) =>
+      ) => {
         changeField<T>(
           formId,
           this.props.name,
           (this.props.getValue as IGetValueFn<T[keyof T]>)(e)
         );
-      onBlur = () => {
+        this.props.onChange && this.props.onChange(e);
+      };
+      onBlur = (
+        e: React.FocusEvent<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+      ) => {
         updateField<T>(
           formId,
           this.props.name,
@@ -441,14 +456,21 @@ export const createFormsStore = <S extends IFormState>(
           false
         );
         validators[formId]();
+        this.props.onBlur && this.props.onBlur(e);
       };
-      onFocus = () =>
+      onFocus = (
+        e: React.FocusEvent<
+          HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+      ) => {
         updateField<T>(
           formId,
           this.props.name,
           field => field.set("visited", true).set("focus", true),
           false
         );
+        this.props.onFocus && this.props.onFocus(e);
+      };
       consumerRender = (state: Record<S>) => {
         const { name, Component, getValue, ...props } = this.props,
           field = selectField<T>(state, formId, name),
