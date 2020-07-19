@@ -3,7 +3,6 @@ import { State } from "@aicacia/state";
 import { createContext } from "@aicacia/state-react";
 import * as Enzyme from "enzyme";
 import * as EnzymeAdapter from "enzyme-adapter-react-16";
-import { JSDOM } from "jsdom";
 import * as React from "react";
 import * as tape from "tape";
 import {
@@ -12,6 +11,8 @@ import {
   IInputProps,
   INITIAL_STATE as forms
 } from ".";
+// @ts-ignore
+import { JSDOM } from "jsdom";
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>");
 
@@ -120,12 +121,12 @@ interface IFormValues {
   name: string;
   gender: IGender;
 }
-interface IFormProps extends IInjectedFormProps<IFormValues> {}
+interface IFormProps extends IInjectedFormProps<IFormValues> { }
 
 const GENDERS: IGender[] = [
-    { key: 1, value: "Male" },
-    { key: 2, value: "Female" }
-  ],
+  { key: 1, value: "Male" },
+  { key: 2, value: "Female" }
+],
   getGenderValue = (e: React.FormEvent) =>
     GENDERS.find(option => option.key === (e.target as any).value),
   getGenderDisplayValue = ({ value }: IGender) => value;
@@ -208,8 +209,8 @@ tape("connect update", (assert: tape.Test) => {
     onFormChangeValidCalled = 0;
 
   const onFormChange = () => {
-      onFormChangeCalled++;
-    },
+    onFormChangeCalled++;
+  },
     onFormChangeValid = () => {
       onFormChangeValidCalled++;
     },

@@ -15,9 +15,7 @@
     "test": "ts-node node_modules/.bin/tape src/**/*.test.{ts,tsx} | tap-spec",
     "coverage": "nyc --reporter=lcov --require ts-node/register tape src/**/*.test.{ts,tsx} | tap-spec; nyc report ---reporter=text",
     "clean": "rm -rf ./lib",
-    "formatTS": "prettier-tslint fix '**/*.{ts,tsx}'",
-    "formatJS": "prettier --write '**/*.{js,jsx,json}' --ignore-path .gitignore",
-    "format": "npm run formatTS && npm run formatJS",
+    "format": "prettier-tslint fix '**/*.{ts,tsx}' && prettier --write '**/*.{js,jsx,json}' --ignore-path .gitignore",
     "lint": "tslint -c tslint.json 'src/**/*.{ts,tsx}' -e 'src/**/*.test.*'"
   },
   "keywords": [
@@ -34,7 +32,6 @@
     "@aicacia/state-react": "^0.1.2",
     "@types/enzyme": "^3.10.5",
     "@types/enzyme-adapter-react-16": "^1.0.6",
-    "@types/jsdom": "^16.2.0",
     "@types/react": "^16.9.27",
     "@types/tape": "^4.2.34",
     "@types/uuid": "^7.0.2",
