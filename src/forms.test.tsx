@@ -324,7 +324,7 @@ tape("without defaults connect update", (assert: tape.Test) => {
   assert.equals(
     selectField(state.getState(), formId, "name").get("value"),
     "",
-    'store\'s name not set to ""'
+    "store's name not set"
   );
 
   wrapper.unmount();

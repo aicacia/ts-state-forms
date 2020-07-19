@@ -22,7 +22,7 @@ export const Field = Record<IField<any>>({
   value: "",
   visited: false,
   focus: false,
-  errors: List()
+  errors: List(),
 });
 
 export interface IForm<T extends {}> {
@@ -34,7 +34,7 @@ export interface IForm<T extends {}> {
 export const Form = Record<IForm<any>>({
   valid: true,
   fields: Map(),
-  errors: List()
+  errors: List(),
 });
 
 export type Forms = Map<string, Record<IForm<any>>>;
@@ -118,8 +118,9 @@ export interface IOptions<T extends {}> {
   changeset(changeset: Changeset<T>): Changeset<T>;
 }
 
+export type IValidator = () => Promise<void>;
 export interface IValidators {
-  [formId: string]: () => void;
+  [formId: string]: IValidator;
 }
 
 type IChangesetFn<T> = (
@@ -137,8 +138,8 @@ export interface IFormState {
 
 const defaultPropsField = {
   getValue(e: Event): any {
-    return (e.target as any).value;
-  }
+    return ((e as any)?.target as any)?.value;
+  },
 };
 
 export const createFormsStore = <S extends IFormState>(
@@ -162,7 +163,7 @@ export const createFormsStore = <S extends IFormState>(
           fields: Object.keys(jsonForm.fields || []).reduce((fields, key) => {
             const jsonField: IJSONObject = (jsonForm[key] || {}) as any;
             return fields.set(key, Field(jsonField));
-          }, Map<string, Record<IField<any>>>())
+          }, Map<string, Record<IField<any>>>()),
         })
       );
     }, Map<string, Record<IForm<any>>>());
@@ -176,8 +177,8 @@ export const createFormsStore = <S extends IFormState>(
   ) => {
     const values: T = form
       .get("fields", Map<string, Record<IField<T[keyof T]>>>())
-      .filter(field => field.has("value"))
-      .map(field => field.get("value"))
+      .filter((field) => field.has("value"))
+      .map((field) => field.get("value"))
       .toJS() as any;
 
     changeset = changesetFn(
@@ -231,7 +232,7 @@ export const createFormsStore = <S extends IFormState>(
       >> = componentRef.current as any;
 
       if (component) {
-        store.updateState(state =>
+        store.updateState((state) =>
           state.set(
             formId,
             validateForm(
@@ -265,13 +266,27 @@ export const createFormsStore = <S extends IFormState>(
       }
     };
 
-    validators[formId] = timeout > 0 ? debounce(validator, timeout) : validator;
+    let wrappedValidator: IValidator;
+
+    if (!timeout) {
+      wrappedValidator = () => {
+        validator();
+        return Promise.resolve();
+      };
+    } else {
+      wrappedValidator = () =>
+        new Promise<void>((resolve) =>
+          debounce(validator, timeout, { after: resolve })
+        );
+    }
+
+    validators[formId] = wrappedValidator;
 
     return formId;
   };
 
   const remove = (formId: string) => {
-    store.updateState(state => state.remove(formId));
+    store.updateState((state) => state.remove(formId));
     delete changesets[formId];
     delete validators[formId];
   };
@@ -288,13 +303,13 @@ export const createFormsStore = <S extends IFormState>(
         form.set(
           key as any,
           Field({
-            value: (defaults as any)[key]
+            value: (defaults as any)[key],
           })
         ),
       Map<keyof T, Record<IField<T[keyof T]>>>()
     );
 
-    store.updateState(state =>
+    store.updateState((state) =>
       state.set(
         formId,
         validateForm(Form({ fields }), component, changeset, changesetFn)
@@ -305,7 +320,8 @@ export const createFormsStore = <S extends IFormState>(
   const selectForm = <T extends {}>(
     state: Record<S>,
     formId: string
-  ): Record<IForm<T>> => state.get("forms").get(formId, Form());
+  ): Record<IForm<T>> =>
+    state.get("forms").get(formId, Form() as Record<IForm<T>>);
 
   const selectFormExists = (state: Record<S>, formId: string): boolean =>
     state.get("forms").has(formId);
@@ -323,8 +339,8 @@ export const createFormsStore = <S extends IFormState>(
     formId: string,
     update: (form: Record<IForm<T>>) => Record<IForm<T>>
   ) =>
-    store.updateState(state =>
-      state.set(formId, update(state.get(formId, Form())))
+    store.updateState((state) =>
+      state.set(formId, update(state.get(formId, Form() as Record<IForm<T>>)))
     );
 
   const selectErrors = (state: Record<S>, formId: string) =>
@@ -340,11 +356,15 @@ export const createFormsStore = <S extends IFormState>(
     formId: string,
     error: Record<IChangesetError>
   ) =>
-    store.updateState(state => {
-      const form: Record<IForm<T>> = state.get(formId, Form());
+    store.updateState((state) => {
+      const form: Record<IForm<T>> = state.get(
+        formId,
+        Form() as Record<IForm<T>>
+      );
+
       return state.set(
         formId,
-        form.update("errors", errors => errors.push(error))
+        form.update("errors", (errors) => errors.push(error))
       );
     });
 
@@ -353,13 +373,17 @@ export const createFormsStore = <S extends IFormState>(
     field: keyof T,
     error: Record<IChangesetError>
   ) =>
-    store.updateState(state => {
-      const form: Record<IForm<T>> = state.get(formId, Form());
+    store.updateState((state) => {
+      const form: Record<IForm<T>> = state.get(
+        formId,
+        Form() as Record<IForm<T>>
+      );
+
       return state.set(
         formId,
-        form.update("fields", fields =>
-          fields.update(field, field =>
-            field.update("errors", errors => errors.push(error))
+        form.update("fields", (fields) =>
+          fields.update(field, (field) =>
+            field.update("errors", (errors) => errors.push(error))
           )
         )
       );
@@ -371,8 +395,11 @@ export const createFormsStore = <S extends IFormState>(
     update: (field: Record<IField<T[keyof T]>>) => Record<IField<T[keyof T]>>,
     invalidate: boolean = true
   ) => {
-    store.updateState(state => {
-      const form: Record<IForm<T>> = state.get(formId, Form()),
+    store.updateState((state) => {
+      const form: Record<IForm<T>> = state.get(
+          formId,
+          Form() as Record<IForm<T>>
+        ),
         fields = form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>()),
         field: Record<IField<T[keyof T]>> = fields.get(name, Field());
 
@@ -395,7 +422,7 @@ export const createFormsStore = <S extends IFormState>(
     updateField(
       formId,
       name,
-      field => field.set("visited", true).set("value", value),
+      (field) => field.set("visited", true).set("value", value),
       invalidate
     );
 
@@ -406,12 +433,15 @@ export const createFormsStore = <S extends IFormState>(
     invalidate: boolean = true
   ) => {
     unsafeChangeField(formId, name, value, invalidate);
-    validators[formId]();
+    return validators[formId]();
   };
 
   const removeField = <T extends {}>(formId: string, name: keyof T) => {
-    store.updateState(state => {
-      const form: Record<IForm<T>> = state.get(formId, Form()),
+    store.updateState((state) => {
+      const form: Record<IForm<T>> = state.get(
+          formId,
+          Form() as Record<IForm<T>>
+        ),
         fields = form.get("fields", Map<keyof T, Record<IField<T[keyof T]>>>());
 
       if (form && fields.has(name)) {
@@ -437,36 +467,39 @@ export const createFormsStore = <S extends IFormState>(
           HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
       ) => {
+        this.props.onChange && e.persist();
         changeField<T>(
           formId,
           this.props.name,
           (this.props.getValue as IGetValueFn<T[keyof T]>)(e)
-        );
-        this.props.onChange && this.props.onChange(e);
+        ).then(() => this.props.onChange && this.props.onChange(e));
       };
       onBlur = (
         e: React.FocusEvent<
           HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
       ) => {
+        this.props.onBlur && e.persist();
         updateField<T>(
           formId,
           this.props.name,
-          field => field.set("focus", false),
+          (field) => field.set("focus", false),
           false
         );
-        validators[formId]();
-        this.props.onBlur && this.props.onBlur(e);
+        validators[formId]().then(
+          () => this.props.onBlur && this.props.onBlur(e)
+        );
       };
       onFocus = (
         e: React.FocusEvent<
           HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
         >
       ) => {
+        this.props.onFocus && e.persist();
         updateField<T>(
           formId,
           this.props.name,
-          field => field.set("visited", true).set("focus", true),
+          (field) => field.set("visited", true).set("focus", true),
           false
         );
         this.props.onFocus && this.props.onFocus(e);
@@ -487,7 +520,7 @@ export const createFormsStore = <S extends IFormState>(
           change: this.change,
           onChange: this.onChange,
           onBlur: this.onBlur,
-          onFocus: this.onFocus
+          onFocus: this.onFocus,
         });
       };
       componentDidUpdate(prev: IFieldProps<P, T>) {
@@ -514,9 +547,9 @@ export const createFormsStore = <S extends IFormState>(
       Omit<P, keyof IInjectedFormProps<T>> & IExposedFormProps<T>
     > => {
       return class Form extends React.PureComponent<P> {
-        static displayName = `Form(${Component.displayName ||
-          Component.name ||
-          "Component"})`;
+        static displayName = `Form(${
+          Component.displayName || Component.name || "Component"
+        })`;
 
         componentRef: React.RefObject<
           React.ComponentType<P>
@@ -561,7 +594,7 @@ export const createFormsStore = <S extends IFormState>(
         getFormData = () =>
           selectForm(store.state.getState(), this._formId)
             .get("fields", Map())
-            .map(field => field.get("value"));
+            .map((field) => field.get("value"));
         consumerRender = (state: Record<S>) => {
           return (
             selectFormExists(state, this._formId) &&
@@ -578,7 +611,7 @@ export const createFormsStore = <S extends IFormState>(
               getChangeset: this.getChangeset,
               getFormId: this.getFormId,
               getForm: this.getForm,
-              getFormData: this.getFormData
+              getFormData: this.getFormData,
             })
           );
         };
@@ -607,6 +640,6 @@ export const createFormsStore = <S extends IFormState>(
     changeField,
     removeField,
     store,
-    injectForm
+    injectForm,
   };
 };
