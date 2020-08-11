@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
+    "importHelpers": true,
     "target": "es3",
     "module": "commonjs",
-    "jsx": "react",
     "moduleResolution": "node",
     "declaration": true,
-    "outDir": "./lib",
+    "outDir": "lib",
+    "jsx": "react",
     "strict": true,
+    "downlevelIteration": true,
     "lib": ["esnext"]
   },
   "include": ["src"],

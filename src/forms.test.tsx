@@ -9,7 +9,7 @@ import {
   createFormsStore,
   IInjectedFormProps,
   IInputProps,
-  INITIAL_STATE as forms
+  INITIAL_STATE as forms,
 } from ".";
 // @ts-ignore
 import { JSDOM } from "jsdom";
@@ -31,7 +31,7 @@ const state = new State(INITIAL_STATE),
     addError,
     addFieldError,
     selectErrors,
-    selectFieldErrors
+    selectFieldErrors,
   } = createFormsStore(state, Consumer);
 
 Enzyme.configure({ adapter: new EnzymeAdapter() });
@@ -50,7 +50,7 @@ class TestInput extends React.PureComponent<ITestInputProps> {
       label,
       onChange,
       onBlur,
-      onFocus
+      onFocus,
     } = this.props;
 
     return (
@@ -89,7 +89,7 @@ function SelectInput<V>({
   onBlur,
   onFocus,
   getDisplayValue,
-  children
+  children,
 }: ISelectInputProps<V>) {
   return (
     <div>
@@ -121,14 +121,14 @@ interface IFormValues {
   name: string;
   gender: IGender;
 }
-interface IFormProps extends IInjectedFormProps<IFormValues> { }
+type IFormProps = IInjectedFormProps<IFormValues>;
 
 const GENDERS: IGender[] = [
-  { key: 1, value: "Male" },
-  { key: 2, value: "Female" }
-],
+    { key: 1, value: "Male" },
+    { key: 2, value: "Female" },
+  ],
   getGenderValue = (e: React.FormEvent) =>
-    GENDERS.find(option => option.key === (e.target as any).value),
+    GENDERS.find((option) => option.key === (e.target as any).value),
   getGenderDisplayValue = ({ value }: IGender) => value;
 
 class Form extends React.PureComponent<IFormProps> {
@@ -147,7 +147,7 @@ class Form extends React.PureComponent<IFormProps> {
             SelectInput as React.ComponentType<ISelectInputProps<IGender>>
           }
         >
-          {GENDERS.map(option => (
+          {GENDERS.map((option) => (
             <option key={option.key} value={option.key}>
               {option.value}
             </option>
@@ -160,7 +160,7 @@ class Form extends React.PureComponent<IFormProps> {
 
 const ConnectedForm = injectForm<IFormValues>({
   timeout: 0,
-  changeset: changeset => changeset.validateRequired(["name", "gender"])
+  changeset: (changeset) => changeset.validateRequired(["name", "gender"]),
 })(Form);
 
 interface IRootProps {
@@ -183,7 +183,7 @@ class Root extends React.Component<IRootProps, IRootState> {
     this.formRef = React.createRef();
 
     this.state = {
-      value: state.getState()
+      value: state.getState(),
     };
 
     state.addListener("set-state", () => {
@@ -209,8 +209,8 @@ tape("connect update", (assert: tape.Test) => {
     onFormChangeValidCalled = 0;
 
   const onFormChange = () => {
-    onFormChangeCalled++;
-  },
+      onFormChangeCalled++;
+    },
     onFormChangeValid = () => {
       onFormChangeValidCalled++;
     },
@@ -275,9 +275,7 @@ tape("connect update", (assert: tape.Test) => {
 
   wrapper.find("input").simulate("change", { target: { value: "" } });
   assert.deepEquals(
-    selectField(state.getState(), formId, "name")
-      .get("errors")
-      .toJS(),
+    selectField(state.getState(), formId, "name").get("errors").toJS(),
     [{ message: "required", values: [], meta: undefined }],
     "store's should have errors from changeset"
   );
