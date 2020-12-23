@@ -1,6 +1,8 @@
 export {
   INITIAL_STATE,
-  STORE_NAME,
+  VIEW_NAME,
+  IForms,
+  IStateWithForms,
   IField,
   Field,
   IForm,
@@ -9,10 +11,9 @@ export {
   IInputProps,
   IGetValueFn,
   IFieldProps,
-  IExposedFormProps,
+  IFormProps,
   IInjectedFormProps,
   IOptions,
   IValidators,
-  IFormState,
-  createFormsStore
+  createForms,
 } from "./forms";

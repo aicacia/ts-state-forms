@@ -1,30 +1,37 @@
 # js-state-forms
 
+[![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue")](LICENSE-MIT)
+[![docs](https://img.shields.io/badge/docs-typescript-blue.svg)](https://aicacia.gitlab.io/libs/ts-state-forms/)
+[![npm (scoped)](https://img.shields.io/npm/v/@aicacia/state-forms)](https://www.npmjs.com/package/@aicacia/state-forms)
+[![pipelines](https://gitlab.com/aicacia/libs/ts-state-forms/badges/master/pipeline.svg)](https://gitlab.com/aicacia/libs/ts-state-forms/-/pipelines)
+
 use forms with @aicacia/state and @aicacia/state-react
 
 ## createFormsStore
 
 ```ts
 // "./lib/stores/forms"
+import { createForms } from "@aicacia/state-forms";
 import { state, Consumer } from "../path/to/state";
 
 export const {
-  create,
-  remove,
+  createForm,
+  removeForm,
   selectForm,
   selectFormExists,
   selectField,
   updateForm,
   selectErrors,
   selectFieldErrors,
-  addError,
+  addFormError,
   addFieldError,
   updateField,
   changeField,
   removeField,
-  store,
-  injectForm
-} = createFormsStore(state, Consumer);
+  forms,
+  injectForm,
+  useForm,
+} = createForms(state, Consumer);
 ```
 
 ## Form
@@ -33,30 +40,22 @@ export const {
 // "./lib/components/Form"
 import axios from "axios";
 import { IInputProps, IInjectedFormProps } from "@aicacia/state-forms";
-import { injectForm } from "../path/to/forms";
+import { useForm } from "../path/to/forms";
 
 interface ICustomInputProps extends IInputProps<string> {}
 
 // create a component that can be used with Field Component
-const CustomInput = ({
-    value,
-    error,
-    errors,
-    change,
-    onChange,
-    onBlur,
-    onFocus
-}: ICustomInputProps) => (
+const CustomInput = (props: ICustomInputProps) => (
     <div>
         <input
-            value={value}
-            onChange={onChange}
-            onBlur={onBlur}
-            onFocus={onFocus}
+            value={props.value}
+            onChange={props.onChange}
+            onBlur={props.onBlur}
+            onFocus={props.onFocus}
         />
-        {error && <ul>
+        {props.error && <ul>
         {
-            errors.map({ message } => (
+            props.errors.map({ message } => (
                 <li>{message}</li>
             ))
         }
@@ -64,11 +63,25 @@ const CustomInput = ({
     </div>
 );
 
-interface IFormProps extends IInjectedFormProps {}
+interface IFormValues {
+    name: string;
+    age: number;
+}
 
-class Form extends React.PureComponent<IFormProps> {
-    onSubmit = (e: React.FormEvent) => {
-        const { resetForm, getForm, setErrors } = this.props,
+interface IFormProps {
+    defaults?: Partial<IFormValues>;
+}
+
+function Form(props: IFormProps) {
+    const { Field } = useForm({
+        defaults: props.defaults,
+        changeset: changeset => changeset
+            .validateLength("age", { ">=": 18 })
+            .validateRequired(["name", "age"])
+    });
+
+    const onSubmit = (e: React.FormEvent) => {
+        const { resetForm, getForm, addFormError } = this.props,
             values = getForm();
 
         e.preventDefault();
@@ -81,36 +94,27 @@ class Form extends React.PureComponent<IFormProps> {
                 resetForm();
             })
             .catch(response => {
-                if (response.data) {
-                    setErrors(response.data.errors);
+                if (response.data && response.data.errors) {
+                    // add errors with addFormError
                 }
             });
     };
-    render() {
-        const { valid, Field } = this.props;
 
-        return (
-            <form onSubmit={this.onSubmit}>
-                <Field name="name" Component={CustomInput} />
-                <Field name="age" Component={CustomInput} />
-                <input
-                    type="submit"
-                    onClick={this.onSubmit}
-                    disabled={valid}
-                    value="submit"
-                />
-            </form>
-        );
-    }
+    return (
+        <form onSubmit={this.onSubmit}>
+            <Field name="name" Component={CustomInput} />
+            <Field name="age" Component={CustomInput} />
+            <input
+                type="submit"
+                onClick={this.onSubmit}
+                disabled={valid}
+                value="submit"
+            />
+        </form>
+    );
 }
 
-const ConnectedForm = injectForm({
-    changeset: changeset => changeset
-        .validateLength("age", { ">=": 18 })
-        .validateRequired(["name", "age"])
-})(Form);
-
-React.render(<ConnectedForm
+React.render(<Form
     onFormChange={(props: IFormProps) => {
         console.log("any change", props);
     }}
