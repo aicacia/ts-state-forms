@@ -1,6 +1,6 @@
 {
   "name": "@aicacia/state-forms",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "use forms with @aicacia/state and @aicacia/state-react",
   "repository": {
     "type": "git",
@@ -27,8 +27,9 @@
   "readmeFilename": "README.md",
   "devDependencies": {
     "@aicacia/changeset": "^0.1.7",
-    "@aicacia/state": "^0.2.3",
-    "@aicacia/state-react": "^0.2.0",
+    "@aicacia/json": "^0.1.6",
+    "@aicacia/state": "^0.2.5",
+    "@aicacia/state-react": "^0.2.1",
     "@testing-library/react": "^11.2.2",
     "@types/jsdom": "^16.2.5",
     "@types/react": "^17.0.0",
@@ -60,10 +61,11 @@
     "uuid": "^8.3.0"
   },
   "peerDependencies": {
-    "immutable": "^4.0.0-rc.12",
-    "@aicacia/changeset": "^0.1.6",
-    "@aicacia/state": "^0.2.3",
-    "@aicacia/state-react": "^0.2.0",
+    "immutable": ">=4",
+    "@aicacia/changeset": ">=0.1",
+    "@aicacia/state": ">=0.2",
+    "@aicacia/json": ">=0.1",
+    "@aicacia/state-react": ">=0.2",
     "react": ">=16"
   },
   "nyc": {

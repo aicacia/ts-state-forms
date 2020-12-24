@@ -1,6 +1,7 @@
-import { Changeset, IChangesetError } from "@aicacia/changeset";
+import { Changeset, ChangesetError, IChangesetError } from "@aicacia/changeset";
 import { debounce } from "@aicacia/debounce";
-import { State, View } from "@aicacia/state";
+import { State, Store } from "@aicacia/state";
+import type { IJSONObject } from "@aicacia/json";
 import { List, Map, Record as ImmutableRecord, RecordOf } from "immutable";
 import {
   createElement,
@@ -30,7 +31,7 @@ export const Forms = ImmutableRecord<IForms>({
 });
 
 export const INITIAL_STATE = Forms();
-export const VIEW_NAME = "@aicacia/state-forms";
+export const STORE_NAME = "@aicacia/state-forms";
 
 export interface IField<V> {
   value: V;
@@ -143,7 +144,7 @@ export interface IChangesets {
 }
 
 export interface IStateWithForms {
-  [VIEW_NAME]: RecordOf<IForms>;
+  [STORE_NAME]: RecordOf<IForms>;
 }
 
 const defaultPropsField = {
@@ -152,23 +153,47 @@ const defaultPropsField = {
   },
 };
 
-export function createForms<S extends RecordOf<IStateWithForms>>(
-  state: State<S>,
-  Consumer: Consumer<S>
+export function FormsFromJSON(json: IJSONObject): RecordOf<IForms> {
+  return Forms({
+    forms: Object.entries(json.forms as Record<string, IJSONObject>).reduce(
+      (forms, [id, form]) =>
+        forms.set(
+          id,
+          Form({
+            valid: form.valid as boolean,
+            fields: Object.entries(
+              form.fields as Record<string, IJSONObject>
+            ).reduce(
+              (fields, [name, field]) => fields.set(name, Field(field)),
+              Map<string, RecordOf<IField<any>>>()
+            ),
+            errors: (form.errors as Array<IJSONObject>).reduce(
+              (errors, error) => errors.push(ChangesetError(error)),
+              List<RecordOf<IChangesetError>>()
+            ),
+          })
+        ),
+      Map<string, RecordOf<IForm<any>>>()
+    ),
+  });
+}
+
+function updateForms(
+  store: Store<IStateWithForms, RecordOf<IForms>>,
+  updateFn: (
+    forms: Map<string, RecordOf<IForm<any>>>
+  ) => Map<string, RecordOf<IForm<any>>>
 ) {
-  const forms: View<S, any, RecordOf<IForms>> = state.getView(
-      VIEW_NAME as any
-    ) as any,
+  return store.update((state) => state.update("forms", updateFn));
+}
+
+export function createForms(
+  state: State<IStateWithForms>,
+  Consumer: Consumer<IStateWithForms>
+) {
+  const forms = state.getStore(STORE_NAME),
     validators: IValidators = {},
     changesets: IChangesets = {};
-
-  function updateForms(
-    updateFn: (
-      forms: Map<string, RecordOf<IForm<any>>>
-    ) => Map<string, RecordOf<IForm<any>>>
-  ) {
-    return forms.update((state) => state.update("forms", updateFn));
-  }
 
   function validateForm<T extends Record<string, any>>(
     form: RecordOf<IForm<T>>,
@@ -221,7 +246,7 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
     resetForm<T>(formId, props, changeset, changesetFn);
 
     function validator() {
-      updateForms((state) =>
+      updateForms(forms, (state) =>
         state.set(
           formId,
           validateForm(state.get(formId, Form()), props, changeset, changesetFn)
@@ -264,7 +289,7 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
   }
 
   function removeForm(formId: string) {
-    updateForms((forms) => forms.remove(formId));
+    updateForms(forms, (forms) => forms.remove(formId));
     delete changesets[formId];
     delete validators[formId];
   }
@@ -286,7 +311,7 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
       Map<keyof T, RecordOf<IField<T[keyof T]>>>()
     );
 
-    updateForms((forms) =>
+    updateForms(forms, (forms) =>
       forms.set(
         formId,
         validateForm(Form({ fields }), props, changeset, changesetFn)
@@ -295,18 +320,23 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
   }
 
   function selectForm<T extends Record<string, any>>(
-    state: S,
+    state: RecordOf<IStateWithForms>,
     formId: string
   ): RecordOf<IForm<T>> {
-    return state.get(VIEW_NAME).forms.get(formId, Form()) as RecordOf<IForm<T>>;
+    return state.get(STORE_NAME).forms.get(formId, Form()) as RecordOf<
+      IForm<T>
+    >;
   }
 
-  function selectFormExists(state: S, formId: string): boolean {
-    return state.get(VIEW_NAME).forms.has(formId);
+  function selectFormExists(
+    state: RecordOf<IStateWithForms>,
+    formId: string
+  ): boolean {
+    return state.get(STORE_NAME).forms.has(formId);
   }
 
   function selectField<T extends Record<string, any>>(
-    state: S,
+    state: RecordOf<IStateWithForms>,
     formId: string,
     name: keyof T
   ): RecordOf<IField<T[keyof T]>> {
@@ -317,17 +347,17 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
     formId: string,
     update: (form: RecordOf<IForm<T>>) => RecordOf<IForm<T>>
   ) {
-    return updateForms((forms) =>
+    return updateForms(forms, (forms) =>
       forms.set(formId, update(forms.get(formId, Form()) as any))
     );
   }
 
-  function selectFormErrors(state: S, formId: string) {
+  function selectFormErrors(state: RecordOf<IStateWithForms>, formId: string) {
     return selectForm(state, formId).errors;
   }
 
   function selectFieldErrors<T extends Record<string, any>>(
-    state: S,
+    state: RecordOf<IStateWithForms>,
     formId: string,
     field: keyof T
   ) {
@@ -335,7 +365,7 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
   }
 
   function addFormError(formId: string, error: RecordOf<IChangesetError>) {
-    updateForms((forms) => {
+    updateForms(forms, (forms) => {
       return forms.set(
         formId,
         forms
@@ -350,7 +380,7 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
     field: keyof T,
     error: RecordOf<IChangesetError>
   ) {
-    updateForms((forms) => {
+    updateForms(forms, (forms) => {
       const form: RecordOf<IForm<T>> = forms.get(formId, Form()) as any;
 
       return forms.set(
@@ -372,7 +402,7 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
     ) => RecordOf<IField<T[keyof T]>>,
     invalidate = true
   ) {
-    updateForms((forms) => {
+    updateForms(forms, (forms) => {
       const form: RecordOf<IForm<T>> = forms.get(formId, Form()) as any,
         fields = form.get(
           "fields",
@@ -418,7 +448,7 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
     formId: string,
     name: keyof T
   ) {
-    updateForms((forms) => {
+    updateForms(forms, (forms) => {
       const form: RecordOf<IForm<T>> = forms.get(formId, Form()) as any,
         fields = form.get(
           "fields",
@@ -486,7 +516,7 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
         );
         this.props.onFocus && this.props.onFocus(e);
       };
-      consumerRender = (state: S) => {
+      consumerRender = (state: RecordOf<IStateWithForms>) => {
         const { name, Component, ...props } = this.props,
           field = selectField<T>(state, formId, name),
           value = field.get("value"),
@@ -631,7 +661,7 @@ export function createForms<S extends RecordOf<IStateWithForms>>(
           selectForm(state.getCurrent(), this._formId)
             .get("fields", Map())
             .map((field) => field.get("value"));
-        consumerRender = (state: RecordOf<S>) =>
+        consumerRender = (state: RecordOf<IStateWithForms>) =>
           createElement(Component, {
             ...this.props,
             ref: this.componentRef,

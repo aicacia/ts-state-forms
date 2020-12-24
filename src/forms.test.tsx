@@ -3,7 +3,6 @@ import * as tape from "tape";
 import { render } from "@testing-library/react";
 import { Changeset, ChangesetError } from "@aicacia/changeset";
 import { State } from "@aicacia/state";
-import { Record } from "immutable";
 import { createContext, createStateProvider } from "@aicacia/state-react";
 import { Simulate } from "react-dom/test-utils";
 import { JSDOM } from "jsdom";
@@ -12,8 +11,9 @@ import {
   IInjectedFormProps,
   IFormProps,
   IInputProps,
-  VIEW_NAME,
+  STORE_NAME,
   INITIAL_STATE,
+  FormsFromJSON,
 } from ".";
 
 const dom = new JSDOM();
@@ -21,9 +21,10 @@ const dom = new JSDOM();
 (global as any).window = dom.window;
 (global as any).document = dom.window.document;
 
-const AppState = Record({ [VIEW_NAME]: INITIAL_STATE });
-
-const state = new State(AppState()),
+const state = new State(
+    { [STORE_NAME]: INITIAL_STATE },
+    { [STORE_NAME]: FormsFromJSON }
+  ),
   { Consumer, Provider } = createContext(state.getCurrent()),
   {
     selectField,
