@@ -143,9 +143,7 @@ export interface IChangesets {
   [formId: string]: Changeset<any>;
 }
 
-export interface IStateWithForms {
-  [STORE_NAME]: RecordOf<IForms>;
-}
+export type IStateWithForms = Record<typeof STORE_NAME, RecordOf<IForms>>;
 
 const defaultPropsField = {
   getValue(e: Event): any {
@@ -187,50 +185,52 @@ function updateForms(
   return store.update((state) => state.update("forms", updateFn));
 }
 
-export function createForms(
-  state: State<IStateWithForms>,
-  Consumer: Consumer<IStateWithForms>
+function validateForm<T extends Record<string, any>>(
+  form: RecordOf<IForm<T>>,
+  props: IInjectedFormProps<T>,
+  changeset: Changeset<T>,
+  changesetFn: IChangesetFn<T>
 ) {
-  const forms = state.getStore(STORE_NAME),
+  const values: T = form
+    .get("fields", Map<string, RecordOf<IField<T[keyof T]>>>())
+    .filter((field) => field.has("value"))
+    .map((field) => field.get("value"))
+    .toJS() as any;
+
+  changeset = changesetFn(changeset.addChanges(values).clearErrors(), props);
+
+  let valid = true;
+  const fields = form
+    .get("fields", Map<keyof T, RecordOf<IField<T[keyof T]>>>())
+    .map((field, key) => {
+      const errors = changeset.getErrorList(key);
+
+      if (!errors.isEmpty()) {
+        valid = false;
+      }
+      if (field.get("visited")) {
+        return field.set("errors", errors);
+      } else {
+        return field;
+      }
+    });
+
+  if (valid && fields.isEmpty()) {
+    valid = false;
+  }
+
+  return form.set("valid", valid).set("fields", fields);
+}
+
+export function createForms<S extends IStateWithForms>(
+  state: State<S>,
+  Consumer: Consumer<RecordOf<S>>
+) {
+  const forms: Store<IStateWithForms, RecordOf<IForms>> = state.getStore(
+      STORE_NAME as any
+    ) as any,
     validators: IValidators = {},
     changesets: IChangesets = {};
-
-  function validateForm<T extends Record<string, any>>(
-    form: RecordOf<IForm<T>>,
-    props: IInjectedFormProps<T>,
-    changeset: Changeset<T>,
-    changesetFn: IChangesetFn<T>
-  ) {
-    const values: T = form
-      .get("fields", Map<string, RecordOf<IField<T[keyof T]>>>())
-      .filter((field) => field.has("value"))
-      .map((field) => field.get("value"))
-      .toJS() as any;
-
-    changeset = changesetFn(changeset.addChanges(values).clearErrors(), props);
-
-    let valid = true;
-    const fields = form
-      .get("fields", Map<keyof T, RecordOf<IField<T[keyof T]>>>())
-      .map((field, key) => {
-        const errors = changeset.getErrorList(key);
-
-        if (!errors.isEmpty()) {
-          valid = false;
-        }
-        if (field.get("visited")) {
-          return field.set("errors", errors);
-        } else {
-          return field;
-        }
-      });
-
-    if (valid && fields.isEmpty()) {
-      valid = false;
-    }
-
-    return form.set("valid", valid).set("fields", fields);
-  }
 
   function createForm<T extends Record<string, any>>(
     props: IInjectedFormProps<T>,
@@ -320,7 +320,7 @@ export function createForms(
   }
 
   function selectForm<T extends Record<string, any>>(
-    state: RecordOf<IStateWithForms>,
+    state: RecordOf<S>,
     formId: string
   ): RecordOf<IForm<T>> {
     return state.get(STORE_NAME).forms.get(formId, Form()) as RecordOf<
@@ -328,15 +328,12 @@ export function createForms(
     >;
   }
 
-  function selectFormExists(
-    state: RecordOf<IStateWithForms>,
-    formId: string
-  ): boolean {
+  function selectFormExists(state: RecordOf<S>, formId: string): boolean {
     return state.get(STORE_NAME).forms.has(formId);
   }
 
   function selectField<T extends Record<string, any>>(
-    state: RecordOf<IStateWithForms>,
+    state: RecordOf<S>,
     formId: string,
     name: keyof T
   ): RecordOf<IField<T[keyof T]>> {
@@ -352,12 +349,12 @@ export function createForms(
     );
   }
 
-  function selectFormErrors(state: RecordOf<IStateWithForms>, formId: string) {
+  function selectFormErrors(state: RecordOf<S>, formId: string) {
     return selectForm(state, formId).errors;
   }
 
   function selectFieldErrors<T extends Record<string, any>>(
-    state: RecordOf<IStateWithForms>,
+    state: RecordOf<S>,
     formId: string,
     field: keyof T
   ) {
@@ -516,7 +513,7 @@ export function createForms(
         );
         this.props.onFocus && this.props.onFocus(e);
       };
-      consumerRender = (state: RecordOf<IStateWithForms>) => {
+      consumerRender = (state: RecordOf<S>) => {
         const { name, Component, ...props } = this.props,
           field = selectField<T>(state, formId, name),
           value = field.get("value"),
@@ -661,7 +658,7 @@ export function createForms(
           selectForm(state.getCurrent(), this._formId)
             .get("fields", Map())
             .map((field) => field.get("value"));
-        consumerRender = (state: RecordOf<IStateWithForms>) =>
+        consumerRender = (state: RecordOf<S>) =>
           createElement(Component, {
             ...this.props,
             ref: this.componentRef,
