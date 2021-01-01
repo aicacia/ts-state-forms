@@ -1,9 +1,9 @@
 # js-state-forms
 
 [![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue")](LICENSE-MIT)
-[![docs](https://img.shields.io/badge/docs-typescript-blue.svg)](https://aicacia.gitlab.io/libs/ts-state-forms/)
+[![docs](https://img.shields.io/badge/docs-typescript-blue.svg)](https://aicacia.github.io/ts-state-forms/)
 [![npm (scoped)](https://img.shields.io/npm/v/@aicacia/state-forms)](https://www.npmjs.com/package/@aicacia/state-forms)
-[![pipelines](https://gitlab.com/aicacia/libs/ts-state-forms/badges/master/pipeline.svg)](https://gitlab.com/aicacia/libs/ts-state-forms/-/pipelines)
+[![build](https://github.com/aicacia/ts-state-forms/workflows/Test/badge.svg)](https://github.com/aicacia/ts-state-forms/actions?query=workflow%3ATest)
 
 use forms with @aicacia/state and @aicacia/state-react
 
