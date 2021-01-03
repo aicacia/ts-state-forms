@@ -151,7 +151,7 @@ const defaultPropsField = {
   },
 };
 
-export function FormsFromJSON(json: IJSONObject): RecordOf<IForms> {
+export function fromJSON(json: IJSONObject): RecordOf<IForms> {
   return Forms({
     forms: Object.entries(json.forms as Record<string, IJSONObject>).reduce(
       (forms, [id, form]) =>
@@ -685,8 +685,6 @@ export function createForms<S extends IStateWithForms>(
   }
 
   return {
-    createForm,
-    removeForm,
     selectForm,
     selectFormExists,
     selectField,

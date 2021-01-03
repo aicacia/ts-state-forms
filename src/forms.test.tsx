@@ -13,7 +13,7 @@ import {
   IInputProps,
   STORE_NAME,
   INITIAL_STATE,
-  FormsFromJSON,
+  fromJSON,
 } from ".";
 
 const dom = new JSDOM();
@@ -23,7 +23,7 @@ const dom = new JSDOM();
 
 const state = new State(
     { [STORE_NAME]: INITIAL_STATE },
-    { [STORE_NAME]: FormsFromJSON }
+    { [STORE_NAME]: fromJSON }
   ),
   { Consumer, Provider } = createContext(state.getCurrent()),
   {

@@ -1,7 +1,7 @@
 export {
   INITIAL_STATE,
   STORE_NAME,
-  FormsFromJSON,
+  fromJSON,
   IForms,
   IStateWithForms,
   IField,

@@ -1,4 +1,4 @@
-# js-state-forms
+# ts-state-forms
 
 [![license](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue")](LICENSE-MIT)
 [![docs](https://img.shields.io/badge/docs-typescript-blue.svg)](https://aicacia.github.io/ts-state-forms/)
