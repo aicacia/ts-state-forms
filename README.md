@@ -15,8 +15,6 @@ import { createForms } from "@aicacia/state-forms";
 import { state, Consumer } from "../path/to/state";
 
 export const {
-  createForm,
-  removeForm,
   selectForm,
   selectFormExists,
   selectField,

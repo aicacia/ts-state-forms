@@ -1,3 +1,4 @@
+import { defaultHasher, hash } from "@aicacia/core";
 import { Changeset, ChangesetError, IChangesetError } from "@aicacia/changeset";
 import { debounce } from "@aicacia/debounce";
 import { State, Store } from "@aicacia/state";
@@ -550,16 +551,19 @@ export function createForms<S extends IStateWithForms>(
     options: IOptions<T> & IFormProps<T>
   ): IInjectedFormProps<T> {
     const [formProps, setFormProps] = useState<IInjectedFormProps<T>>(
-      {} as any
-    );
-
-    const formName = options.name || "",
+        {} as any
+      ),
+      formName = options.name || "",
       timeout =
         typeof options.timeout === "number" && options.timeout >= 0
           ? options.timeout
           : DEFAULT_TIMEOUT,
       changesetFn = options.changeset,
-      memoArgs = [formName, timeout, ...Object.values(options.defaults || {})];
+      hasher = defaultHasher();
+
+    hash(options, hasher);
+
+    const memoArgs = [hasher.finish()];
 
     useMemo(() => {
       formProps.defaults = options.defaults;
