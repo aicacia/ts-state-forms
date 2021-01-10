@@ -16,5 +16,10 @@ export {
   IInjectedFormProps,
   IOptions,
   IValidators,
+  selectField,
+  selectForm,
+  selectFieldErrors,
+  selectFormErrors,
+  selectFormExists,
   createForms,
 } from "./forms";

@@ -8,6 +8,11 @@ import { Simulate } from "react-dom/test-utils";
 import { JSDOM } from "jsdom";
 import {
   createForms,
+  selectField,
+  selectForm,
+  selectFormExists,
+  selectFormErrors,
+  selectFieldErrors,
   IInjectedFormProps,
   IFormProps,
   IInputProps,
@@ -26,17 +31,10 @@ const state = new State(
     { [STORE_NAME]: fromJSON }
   ),
   { Consumer, Provider } = createContext(state.getCurrent()),
-  {
-    selectField,
-    selectForm,
-    selectFormExists,
-    injectForm,
-    addFormError,
-    addFieldError,
-    selectFormErrors,
-    selectFieldErrors,
-    useForm,
-  } = createForms(state, Consumer);
+  { injectForm, addFormError, addFieldError, useForm } = createForms(
+    state,
+    Consumer
+  );
 
 interface ITestInputProps extends IInputProps<string> {
   label: ReactNode;
